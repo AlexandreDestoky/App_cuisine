@@ -12863,6 +12863,7 @@ var timeout = function timeout(s) {
     }, s * 1000);
   });
 }; // https://forkify-api.herokuapp.com/v2
+//Explication modèle MVC
 ///////////////////////////////////////
 
 
