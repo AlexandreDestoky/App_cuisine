@@ -1,5 +1,4 @@
 import 'regenerator-runtime/runtime';
-// import { mark } from 'regenerator-runtime/runtime';
 import "core-js/stable";
 import icons from "../img/icons.svg"
 
