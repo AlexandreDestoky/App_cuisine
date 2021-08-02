@@ -5,16 +5,11 @@ import recipeView from "./views/recipeView.js";
 
 const recipeContainer = document.querySelector('.recipe');
 
-
 // https://forkify-api.herokuapp.com/v2
 //Explication modèle MVC
-
-        
-
 ///////////////////////////////////////
 
-
-const showRecipe = async function() {
+const controlRecipes = async function() {
   try {
     const id = window.location.hash.slice(1);
     if(!id) return;
@@ -30,7 +25,10 @@ const showRecipe = async function() {
   }
 }
 
-showRecipe();
+// controlRecipes();
 
-["hashchange","load"].forEach(el => window.addEventListener(el,showRecipe))
+const init = function() {
+  recipeView.addHandleRender(controlRecipes);
+}
 
+init();

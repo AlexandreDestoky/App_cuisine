@@ -12858,7 +12858,7 @@ exports.getJSON = void 0;
 
 var _regeneratorRuntime = require("regenerator-runtime");
 
-var _config = require("./config");
+var _config = require("./config.js");
 
 function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
 
@@ -12920,7 +12920,7 @@ var getJSON = /*#__PURE__*/function () {
 }();
 
 exports.getJSON = getJSON;
-},{"regenerator-runtime":"node_modules/regenerator-runtime/runtime.js","./config":"src/js/config.js"}],"src/js/model.js":[function(require,module,exports) {
+},{"regenerator-runtime":"node_modules/regenerator-runtime/runtime.js","./config.js":"src/js/config.js"}],"src/js/model.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -13444,6 +13444,13 @@ var RecipeView = /*#__PURE__*/function () {
 
       _classPrivateFieldGet(this, _parentElement).insertAdjacentHTML("afterbegin", markup);
     }
+  }, {
+    key: "addHandleRender",
+    value: function addHandleRender(handler) {
+      ["hashchange", "load"].forEach(function (el) {
+        return window.addEventListener(el, handler);
+      });
+    }
   }]);
 
   return RecipeView;
@@ -13489,7 +13496,7 @@ var recipeContainer = document.querySelector('.recipe'); // https://forkify-api.
 //Explication modèle MVC
 ///////////////////////////////////////
 
-var showRecipe = /*#__PURE__*/function () {
+var controlRecipes = /*#__PURE__*/function () {
   var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
     var id;
     return regeneratorRuntime.wrap(function _callee$(_context) {
@@ -13533,15 +13540,17 @@ var showRecipe = /*#__PURE__*/function () {
     }, _callee, null, [[0, 10]]);
   }));
 
-  return function showRecipe() {
+  return function controlRecipes() {
     return _ref.apply(this, arguments);
   };
-}();
+}(); // controlRecipes();
 
-showRecipe();
-["hashchange", "load"].forEach(function (el) {
-  return window.addEventListener(el, showRecipe);
-});
+
+var init = function init() {
+  _recipeView.default.addHandleRender(controlRecipes);
+};
+
+init();
 },{"regenerator-runtime/runtime":"node_modules/regenerator-runtime/runtime.js","core-js/stable":"node_modules/core-js/stable/index.js","./model.js":"src/js/model.js","./views/recipeView.js":"src/js/views/recipeView.js"}],"../../../../../Users/Asus/AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
@@ -13570,7 +13579,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50353" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "58991" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
