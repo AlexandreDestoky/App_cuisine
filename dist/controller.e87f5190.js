@@ -12968,15 +12968,17 @@ var loadRecipe = /*#__PURE__*/function () {
               ingredients: recipe.ingredients
             };
             console.log(state.recipe);
-            _context.next = 12;
+            _context.next = 13;
             break;
 
           case 9:
             _context.prev = 9;
             _context.t0 = _context["catch"](0);
-            alert(_context.t0);
+            // alert(error);
+            console.log(_context.t0);
+            throw _context.t0;
 
-          case 12:
+          case 13:
           case "end":
             return _context.stop();
         }
@@ -13397,6 +13399,10 @@ var _parentElement = /*#__PURE__*/new WeakMap();
 
 var _data = /*#__PURE__*/new WeakMap();
 
+var _errorMessage = /*#__PURE__*/new WeakMap();
+
+var _message = /*#__PURE__*/new WeakMap();
+
 var _clear = /*#__PURE__*/new WeakSet();
 
 var _generateMarkup = /*#__PURE__*/new WeakSet();
@@ -13422,6 +13428,16 @@ var RecipeView = /*#__PURE__*/function () {
       writable: true,
       value: void 0
     });
+
+    _errorMessage.set(this, {
+      writable: true,
+      value: "We couldn't find that recipe. Please try another one !"
+    });
+
+    _message.set(this, {
+      writable: true,
+      value: ""
+    });
   }
 
   _createClass(RecipeView, [{
@@ -13439,6 +13455,26 @@ var RecipeView = /*#__PURE__*/function () {
     key: "renderSpinner",
     value: function renderSpinner() {
       var markup = "\n    <div class=\"spinner\">\n      <svg>\n        <use href=\"".concat(_icons.default, "#icon-loader\"></use>\n      </svg>\n    </div>\n    ");
+
+      _classPrivateMethodGet(this, _clear, _clear2).call(this);
+
+      _classPrivateFieldGet(this, _parentElement).insertAdjacentHTML("afterbegin", markup);
+    }
+  }, {
+    key: "renderError",
+    value: function renderError() {
+      var message = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _classPrivateFieldGet(this, _errorMessage);
+      var markup = "\n    <div class=\"error\">\n      <div>\n        <svg>\n          <use href=\"".concat(_icons.default, "#icon-alert-triangle\"></use>\n        </svg>\n      </div>\n      <p>").concat(message, "</p>\n    </div>\n    ");
+
+      _classPrivateMethodGet(this, _clear, _clear2).call(this);
+
+      _classPrivateFieldGet(this, _parentElement).insertAdjacentHTML("afterbegin", markup);
+    }
+  }, {
+    key: "renderMessage",
+    value: function renderMessage() {
+      var message = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _classPrivateFieldGet(this, _message);
+      var markup = "\n    <div class=\"message\">\n      <div>\n        <svg>\n          <use href=\"".concat(_icons.default, "#icon-smile\"></use>\n        </svg>\n      </div>\n      <p>").concat(message, "</p>\n    </div>\n    ");
 
       _classPrivateMethodGet(this, _clear, _clear2).call(this);
 
@@ -13530,7 +13566,8 @@ var controlRecipes = /*#__PURE__*/function () {
           case 10:
             _context.prev = 10;
             _context.t0 = _context["catch"](0);
-            alert(_context.t0);
+
+            _recipeView.default.renderError();
 
           case 13:
           case "end":
