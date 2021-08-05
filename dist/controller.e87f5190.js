@@ -12843,11 +12843,13 @@ module.exports = require('../internals/path');
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.TIMEOUT_SEC = exports.API_URL = void 0;
+exports.RES_PER_PAGE = exports.TIMEOUT_SEC = exports.API_URL = void 0;
 var API_URL = "https://forkify-api.herokuapp.com/api/v2/recipes/";
 exports.API_URL = API_URL;
 var TIMEOUT_SEC = 10;
 exports.TIMEOUT_SEC = TIMEOUT_SEC;
+var RES_PER_PAGE = 10;
+exports.RES_PER_PAGE = RES_PER_PAGE;
 },{}],"src/js/helper.js":[function(require,module,exports) {
 "use strict";
 
@@ -12926,7 +12928,7 @@ exports.getJSON = getJSON;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.loadSearchResults = exports.loadRecipe = exports.state = void 0;
+exports.getSearchResultsPage = exports.loadSearchResults = exports.loadRecipe = exports.state = void 0;
 
 var _regeneratorRuntime = require("regenerator-runtime");
 
@@ -12942,7 +12944,9 @@ var state = {
   recipe: {},
   search: {
     query: "",
-    results: []
+    results: [],
+    resultsPerPage: _config.RES_PER_PAGE,
+    page: 1
   }
 };
 exports.state = state;
@@ -13043,6 +13047,16 @@ var loadSearchResults = /*#__PURE__*/function () {
 }();
 
 exports.loadSearchResults = loadSearchResults;
+
+var getSearchResultsPage = function getSearchResultsPage() {
+  var page = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : state.search.page;
+  state.search.page = page;
+  var start = (page - 1) * state.search.resultsPerPage;
+  var end = page * state.search.resultsPerPage;
+  return state.search.results.slice(start, end);
+};
+
+exports.getSearchResultsPage = getSearchResultsPage;
 },{"regenerator-runtime":"node_modules/regenerator-runtime/runtime.js","./config.js":"src/js/config.js","./helper.js":"src/js/helper.js"}],"src/img/icons.svg":[function(require,module,exports) {
 module.exports = "/icons.ae3c38d5.svg";
 },{}],"src/js/views/View.js":[function(require,module,exports) {
@@ -13809,28 +13823,28 @@ var controlSearchResults = /*#__PURE__*/function () {
         switch (_context2.prev = _context2.next) {
           case 0:
             _context2.prev = 0;
-
-            _resultsView.default.renderSpinner(); //Get search query
-
-
+            //Get search query
             query = _searchView.default.getQuery();
 
             if (query) {
-              _context2.next = 5;
+              _context2.next = 4;
               break;
             }
 
             return _context2.abrupt("return");
 
-          case 5:
+          case 4:
+            _resultsView.default.renderSpinner(); //Load search results
+
+
             _context2.next = 7;
             return model.loadSearchResults(query);
 
           case 7:
             // Render Results
-            console.log(model.state.search.results);
+            console.log(model.state.search.results); // resultsView.render(model.state.search.results);
 
-            _resultsView.default.render(model.state.search.results);
+            _resultsView.default.render(model.getSearchResultsPage(2));
 
             _context2.next = 14;
             break;
@@ -13890,7 +13904,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62605" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56715" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
