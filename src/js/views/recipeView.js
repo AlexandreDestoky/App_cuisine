@@ -30,15 +30,15 @@ class RecipeView extends View {
           <use href="${icons}#icon-users"></use>
         </svg>
         <span class="recipe__info-data recipe__info-data--people">${this._data.servings}</span>
-        <span class="recipe__info-text">servings</span>
+        <span class="recipe__info-text">serving${this._data.servings > 1 ? "s" :""}</span>
   
         <div class="recipe__info-buttons">
-          <button class="btn--tiny btn--increase-servings">
+          <button class="btn--tiny btn--update-servings" data-update-to="${this._data.servings - 1}" >
             <svg>
               <use href="${icons}#icon-minus-circle"></use>
             </svg>
           </button>
-          <button class="btn--tiny btn--increase-servings">
+          <button class="btn--tiny btn--update-servings" data-update-to="${this._data.servings + 1}">
             <svg>
               <use href="${icons}#icon-plus-circle"></use>
             </svg>
@@ -97,8 +97,20 @@ class RecipeView extends View {
     </li>`;
   }
 
-  addHandleRender(handler) {
+  addHandlerRender(handler) {
     ["hashchange","load"].forEach(el => window.addEventListener(el,handler))
+  }
+
+  addHandlerUpdateServings(handler) {
+    this._parentElement.addEventListener("click",function(e) {
+      const btn = e.target.closest(".btn--update-servings");
+      if(!btn) return;
+
+      console.log(+btn.dataset.updateTo);
+      const updateTo = +btn.dataset.updateTo;
+      if(updateTo <= 0) return;
+      handler(updateTo);
+    })
   }
 }
 
