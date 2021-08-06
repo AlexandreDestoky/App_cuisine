@@ -58,3 +58,4 @@ const init = function () {
 };
 
 init();
+//Explication suite du projet (BookMark, localStorage etc)
