@@ -12974,23 +12974,23 @@ var loadRecipe = /*#__PURE__*/function () {
               servings: recipe.servings,
               cookingTime: recipe.cooking_time,
               ingredients: recipe.ingredients
-            };
-            console.log(state.recipe);
-            _context.next = 13;
+            }; // console.log(state.recipe);
+
+            _context.next = 12;
             break;
 
-          case 9:
-            _context.prev = 9;
+          case 8:
+            _context.prev = 8;
             _context.t0 = _context["catch"](0);
             console.log(_context.t0);
             throw _context.t0;
 
-          case 13:
+          case 12:
           case "end":
             return _context.stop();
         }
       }
-    }, _callee, null, [[0, 9]]);
+    }, _callee, null, [[0, 8]]);
   }));
 
   return function loadRecipe(_x) {
@@ -13014,7 +13014,7 @@ var loadSearchResults = /*#__PURE__*/function () {
 
           case 4:
             data = _context2.sent;
-            console.log(data);
+            // console.log(data);
             state.search.results = data.data.recipes.map(function (rec) {
               return {
                 id: rec.id,
@@ -13022,23 +13022,23 @@ var loadSearchResults = /*#__PURE__*/function () {
                 publisher: rec.publisher,
                 image: rec.image_url
               };
-            });
-            console.log(state.search);
-            _context2.next = 14;
+            }); // console.log(state.search);
+
+            _context2.next = 12;
             break;
 
-          case 10:
-            _context2.prev = 10;
+          case 8:
+            _context2.prev = 8;
             _context2.t0 = _context2["catch"](0);
             console.log(_context2.t0);
             throw _context2.t0;
 
-          case 14:
+          case 12:
           case "end":
             return _context2.stop();
         }
       }
-    }, _callee2, null, [[0, 10]]);
+    }, _callee2, null, [[0, 8]]);
   }));
 
   return function loadSearchResults(_x2) {
@@ -13718,7 +13718,7 @@ var ResultsView = /*#__PURE__*/function (_View) {
     value: function _generateMarkup() {
       var _this2 = this;
 
-      console.log(this._data);
+      // console.log(this._data);
       return this._data.map(function (el) {
         return _this2._generateMarkupPreview(el);
       }).join("");
@@ -13736,7 +13736,111 @@ var ResultsView = /*#__PURE__*/function (_View) {
 var _default = new ResultsView();
 
 exports.default = _default;
-},{"../../img/icons.svg":"src/img/icons.svg","./View.js":"src/js/views/View.js"}],"src/js/controller.js":[function(require,module,exports) {
+},{"../../img/icons.svg":"src/img/icons.svg","./View.js":"src/js/views/View.js"}],"src/js/views/paginationView.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _View2 = _interopRequireDefault(require("./View.js"));
+
+var _icons = _interopRequireDefault(require("../../img/icons.svg"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+// import { async } from 'regenerator-runtime/runtime';
+var PaginationView = /*#__PURE__*/function (_View) {
+  _inherits(PaginationView, _View);
+
+  var _super = _createSuper(PaginationView);
+
+  function PaginationView() {
+    var _this;
+
+    _classCallCheck(this, PaginationView);
+
+    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    _this = _super.call.apply(_super, [this].concat(args));
+
+    _defineProperty(_assertThisInitialized(_this), "_parentElement", document.querySelector(".pagination"));
+
+    return _this;
+  }
+
+  _createClass(PaginationView, [{
+    key: "addHandlerClick",
+    value: function addHandlerClick(handler) {
+      this._parentElement.addEventListener("click", function (e) {
+        var btn = e.target.closest(".btn--inline");
+        if (!btn) return;
+        console.log(btn);
+        var goToPage = +btn.dataset.goto;
+        console.log(goToPage);
+        handler(goToPage);
+      });
+    }
+  }, {
+    key: "_generateMarkup",
+    value: function _generateMarkup() {
+      var curPage = this._data.page;
+      var numPages = Math.ceil(this._data.results.length / this._data.resultsPerPage); // console.log("nbr pages :" + numPages);
+      // Page 1 and there are other pages
+
+      if (curPage === 1 && numPages > 1) {
+        return "\n      <button data-goto=\"".concat(curPage + 1, "\" class=\"btn--inline pagination__btn--next\">\n        <span>Page ").concat(curPage + 1, "</span>\n        <svg class=\"search__icon\">\n          <use href=\"").concat(_icons.default, "#icon-arrow-right\"></use>\n        </svg>\n      </button>\n      ");
+      } // Last Page
+
+
+      if (curPage === numPages && numPages > 1) {
+        return "\n      <button data-goto=\"".concat(curPage - 1, "\" class=\"btn--inline pagination__btn--prev\">\n        <svg class=\"search__icon\">\n          <use href=\"").concat(_icons.default, "#icon-arrow-left\"></use>\n        </svg>\n        <span>Page ").concat(curPage - 1, "</span>\n      </button>\n      ");
+      } // Other page
+
+
+      if (curPage < numPages) {
+        return "\n      <button data-goto=\"".concat(curPage - 1, "\" class=\"btn--inline pagination__btn--prev\">\n        <svg class=\"search__icon\">\n          <use href=\"").concat(_icons.default, "#icon-arrow-left\"></use>\n        </svg>\n        <span>Page ").concat(curPage - 1, "</span>\n      </button>\n      <button data-goto=\"").concat(curPage + 1, "\" class=\"btn--inline pagination__btn--next\">\n        <span>Page ").concat(curPage + 1, "</span>\n        <svg class=\"search__icon\">\n          <use href=\"").concat(_icons.default, "#icon-arrow-right\"></use>\n        </svg>\n      </button>\n      ");
+      } //Page 1 and there are NO other pages
+
+
+      return "";
+    }
+  }]);
+
+  return PaginationView;
+}(_View2.default);
+
+var _default = new PaginationView();
+
+exports.default = _default;
+},{"./View.js":"src/js/views/View.js","../../img/icons.svg":"src/img/icons.svg"}],"src/js/controller.js":[function(require,module,exports) {
 "use strict";
 
 var _runtime = require("regenerator-runtime/runtime");
@@ -13750,6 +13854,8 @@ var _recipeView = _interopRequireDefault(require("./views/recipeView.js"));
 var _searchView = _interopRequireDefault(require("./views/searchView.js"));
 
 var _resultsView = _interopRequireDefault(require("./views/resultsView.js"));
+
+var _paginationView = _interopRequireDefault(require("./views/paginationView.js"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -13823,7 +13929,7 @@ var controlSearchResults = /*#__PURE__*/function () {
         switch (_context2.prev = _context2.next) {
           case 0:
             _context2.prev = 0;
-            //Get search query
+            //1.Get search query
             query = _searchView.default.getQuery();
 
             if (query) {
@@ -13834,17 +13940,18 @@ var controlSearchResults = /*#__PURE__*/function () {
             return _context2.abrupt("return");
 
           case 4:
-            _resultsView.default.renderSpinner(); //Load search results
-
+            //2.Load search results
+            _resultsView.default.renderSpinner();
 
             _context2.next = 7;
             return model.loadSearchResults(query);
 
           case 7:
-            // Render Results
-            console.log(model.state.search.results); // resultsView.render(model.state.search.results);
+            //3.Render Results
+            _resultsView.default.render(model.getSearchResultsPage()); // 4.Render pagination buttons
 
-            _resultsView.default.render(model.getSearchResultsPage(2));
+
+            _paginationView.default.render(model.state.search);
 
             _context2.next = 14;
             break;
@@ -13867,16 +13974,22 @@ var controlSearchResults = /*#__PURE__*/function () {
   };
 }();
 
-controlSearchResults();
+var controlPagination = function controlPagination(goToPage) {
+  _resultsView.default.render(model.getSearchResultsPage(goToPage));
+
+  _paginationView.default.render(model.state.search);
+};
 
 var init = function init() {
   _recipeView.default.addHandleRender(controlRecipes);
 
   _searchView.default.addHandlerSearch(controlSearchResults);
+
+  _paginationView.default.addHandlerClick(controlPagination);
 };
 
 init();
-},{"regenerator-runtime/runtime":"node_modules/regenerator-runtime/runtime.js","core-js/stable":"node_modules/core-js/stable/index.js","./model.js":"src/js/model.js","./views/recipeView.js":"src/js/views/recipeView.js","./views/searchView.js":"src/js/views/searchView.js","./views/resultsView.js":"src/js/views/resultsView.js"}],"../../../../../Users/Asus/AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"regenerator-runtime/runtime":"node_modules/regenerator-runtime/runtime.js","core-js/stable":"node_modules/core-js/stable/index.js","./model.js":"src/js/model.js","./views/recipeView.js":"src/js/views/recipeView.js","./views/searchView.js":"src/js/views/searchView.js","./views/resultsView.js":"src/js/views/resultsView.js","./views/paginationView.js":"src/js/views/paginationView.js"}],"../../../../../Users/Asus/AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -13904,7 +14017,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56715" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "59980" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
