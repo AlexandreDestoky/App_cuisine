@@ -14,9 +14,11 @@ if (module.hot) {
 const controlRecipes = async function () {
   try {
     const id = window.location.hash.slice(1);
-    if (!id) return;
 
+    if (!id) return;
     recipeView.renderSpinner();
+    // maj el selectionné
+    resultsView.update(model.getSearchResultsPage());
     //charge la recette
     await model.loadRecipe(id);
     //affiche recette
@@ -53,7 +55,9 @@ const controlPagination = function (goToPage) {
 
 const controlServings = function(newServings) {
   model.updateServings(newServings);
-  recipeView.render(model.state.recipe);
+  
+  // recipeView.render(model.state.recipe);
+  recipeView.update(model.state.recipe);
 }
 
 
