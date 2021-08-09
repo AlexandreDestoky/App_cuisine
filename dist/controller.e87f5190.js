@@ -13115,6 +13115,7 @@ init();
 var clearBookmarks = function clearBookmarks() {
   localStorage.clear("bookmarks");
 }; // clearBookmarks();
+//Explication suite projet (Uploader une recette);
 },{"regenerator-runtime":"node_modules/regenerator-runtime/runtime.js","./config.js":"src/js/config.js","./helper.js":"src/js/helper.js"}],"src/img/icons.svg":[function(require,module,exports) {
 module.exports = "/icons.ae3c38d5.svg";
 },{}],"src/js/views/View.js":[function(require,module,exports) {
