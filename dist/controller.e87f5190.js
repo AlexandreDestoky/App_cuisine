@@ -12843,20 +12843,22 @@ module.exports = require('../internals/path');
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.RES_PER_PAGE = exports.TIMEOUT_SEC = exports.API_URL = void 0;
+exports.KEY = exports.RES_PER_PAGE = exports.TIMEOUT_SEC = exports.API_URL = void 0;
 var API_URL = "https://forkify-api.herokuapp.com/api/v2/recipes/";
 exports.API_URL = API_URL;
 var TIMEOUT_SEC = 10;
 exports.TIMEOUT_SEC = TIMEOUT_SEC;
 var RES_PER_PAGE = 10;
 exports.RES_PER_PAGE = RES_PER_PAGE;
+var KEY = "f595a8df-d62a-46b4-912c-5ef2ed1d12d8";
+exports.KEY = KEY;
 },{}],"src/js/helper.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.getJSON = void 0;
+exports.sendJSON = exports.getJSON = void 0;
 
 var _regeneratorRuntime = require("regenerator-runtime");
 
@@ -12876,44 +12878,45 @@ var timeout = function timeout(s) {
 
 var getJSON = /*#__PURE__*/function () {
   var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(url) {
-    var res, data;
+    var fetchPro, res, data;
     return regeneratorRuntime.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
           case 0:
             _context.prev = 0;
-            _context.next = 3;
-            return Promise.race([fetch(url), timeout(_config.TIMEOUT_SEC)]);
+            fetchPro = fetch(url);
+            _context.next = 4;
+            return Promise.race([fetchPro, timeout(_config.TIMEOUT_SEC)]);
 
-          case 3:
+          case 4:
             res = _context.sent;
-            _context.next = 6;
+            _context.next = 7;
             return res.json();
 
-          case 6:
+          case 7:
             data = _context.sent;
 
             if (res.ok) {
-              _context.next = 9;
+              _context.next = 10;
               break;
             }
 
             throw new Error("".concat(data.message, " (").concat(res.status, ")"));
 
-          case 9:
+          case 10:
             return _context.abrupt("return", data);
 
-          case 12:
-            _context.prev = 12;
+          case 13:
+            _context.prev = 13;
             _context.t0 = _context["catch"](0);
             throw _context.t0;
 
-          case 15:
+          case 16:
           case "end":
             return _context.stop();
         }
       }
-    }, _callee, null, [[0, 12]]);
+    }, _callee, null, [[0, 13]]);
   }));
 
   return function getJSON(_x) {
@@ -12922,19 +12925,87 @@ var getJSON = /*#__PURE__*/function () {
 }();
 
 exports.getJSON = getJSON;
+
+var sendJSON = /*#__PURE__*/function () {
+  var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(url, uploadData) {
+    var fetchPro, res, data;
+    return regeneratorRuntime.wrap(function _callee2$(_context2) {
+      while (1) {
+        switch (_context2.prev = _context2.next) {
+          case 0:
+            _context2.prev = 0;
+            fetchPro = fetch(url, {
+              method: "POST",
+              headers: {
+                "Content-type": "application/json"
+              },
+              body: JSON.stringify(uploadData)
+            });
+            _context2.next = 4;
+            return Promise.race([fetchPro, timeout(_config.TIMEOUT_SEC)]);
+
+          case 4:
+            res = _context2.sent;
+            _context2.next = 7;
+            return res.json();
+
+          case 7:
+            data = _context2.sent;
+
+            if (res.ok) {
+              _context2.next = 10;
+              break;
+            }
+
+            throw new Error("".concat(data.message, " (").concat(res.status, ")"));
+
+          case 10:
+            return _context2.abrupt("return", data);
+
+          case 13:
+            _context2.prev = 13;
+            _context2.t0 = _context2["catch"](0);
+            throw _context2.t0;
+
+          case 16:
+          case "end":
+            return _context2.stop();
+        }
+      }
+    }, _callee2, null, [[0, 13]]);
+  }));
+
+  return function sendJSON(_x2, _x3) {
+    return _ref2.apply(this, arguments);
+  };
+}();
+
+exports.sendJSON = sendJSON;
 },{"regenerator-runtime":"node_modules/regenerator-runtime/runtime.js","./config.js":"src/js/config.js"}],"src/js/model.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.deleteBookmark = exports.addBookmark = exports.updateServings = exports.getSearchResultsPage = exports.loadSearchResults = exports.loadRecipe = exports.state = void 0;
+exports.uploadRecipe = exports.deleteBookmark = exports.addBookmark = exports.updateServings = exports.getSearchResultsPage = exports.loadSearchResults = exports.loadRecipe = exports.state = void 0;
 
 var _regeneratorRuntime = require("regenerator-runtime");
 
 var _config = require("./config.js");
 
 var _helper = require("./helper.js");
+
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+function _iterableToArrayLimit(arr, i) { var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]; if (_i == null) return; var _arr = []; var _n = true; var _d = false; var _s, _e; try { for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
 function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
 
@@ -13115,7 +13186,71 @@ init();
 var clearBookmarks = function clearBookmarks() {
   localStorage.clear("bookmarks");
 }; // clearBookmarks();
-//Explication suite projet (Uploader une recette);
+
+
+var uploadRecipe = /*#__PURE__*/function () {
+  var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(newRecipe) {
+    var ingredients, recipe, data;
+    return regeneratorRuntime.wrap(function _callee3$(_context3) {
+      while (1) {
+        switch (_context3.prev = _context3.next) {
+          case 0:
+            _context3.prev = 0;
+            ingredients = Object.entries(newRecipe).filter(function (entry) {
+              return entry[0].startsWith("ingredient") && entry[1] !== "";
+            }).map(function (ing) {
+              var ingArr = ing[1].replaceAll(" ", "").split(",");
+              if (ingArr.length !== 3) throw new Error("Wrong ingredient format ! Please use the correct format 😉");
+
+              var _ingArr = _slicedToArray(ingArr, 3),
+                  quantity = _ingArr[0],
+                  unit = _ingArr[1],
+                  description = _ingArr[2];
+
+              return {
+                quantity: quantity ? +quantity : null,
+                unit: unit,
+                description: description
+              };
+            });
+            recipe = {
+              title: newRecipe.title,
+              source_url: newRecipe.sourceUrl,
+              image_url: newRecipe.image,
+              publisher: newRecipe.publisher,
+              cooking_time: +newRecipe.cookingTime,
+              servings: +newRecipe.servings,
+              ingredients: ingredients
+            };
+            console.log(ingredients);
+            _context3.next = 6;
+            return (0, _helper.sendJSON)("".concat(_config.API_URL, "?search=").concat(recipe.title, "&key=").concat(_config.KEY), recipe);
+
+          case 6:
+            data = _context3.sent;
+            console.log(data);
+            _context3.next = 13;
+            break;
+
+          case 10:
+            _context3.prev = 10;
+            _context3.t0 = _context3["catch"](0);
+            throw _context3.t0;
+
+          case 13:
+          case "end":
+            return _context3.stop();
+        }
+      }
+    }, _callee3, null, [[0, 10]]);
+  }));
+
+  return function uploadRecipe(_x3) {
+    return _ref3.apply(this, arguments);
+  };
+}();
+
+exports.uploadRecipe = uploadRecipe;
 },{"regenerator-runtime":"node_modules/regenerator-runtime/runtime.js","./config.js":"src/js/config.js","./helper.js":"src/js/helper.js"}],"src/img/icons.svg":[function(require,module,exports) {
 module.exports = "/icons.ae3c38d5.svg";
 },{}],"src/js/views/View.js":[function(require,module,exports) {
@@ -14104,6 +14239,127 @@ var PaginationView = /*#__PURE__*/function (_View) {
 var _default = new PaginationView();
 
 exports.default = _default;
+},{"./View.js":"src/js/views/View.js","../../img/icons.svg":"src/img/icons.svg"}],"src/js/views/addRecipeView.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _View2 = _interopRequireDefault(require("./View.js"));
+
+var _icons = _interopRequireDefault(require("../../img/icons.svg"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var AddRecipeView = /*#__PURE__*/function (_View) {
+  _inherits(AddRecipeView, _View);
+
+  var _super = _createSuper(AddRecipeView);
+
+  function AddRecipeView() {
+    var _this;
+
+    _classCallCheck(this, AddRecipeView);
+
+    _this = _super.call(this);
+
+    _defineProperty(_assertThisInitialized(_this), "_parentElement", document.querySelector(".upload"));
+
+    _defineProperty(_assertThisInitialized(_this), "_window", document.querySelector(".add-recipe-window"));
+
+    _defineProperty(_assertThisInitialized(_this), "_overlay", document.querySelector(".overlay"));
+
+    _defineProperty(_assertThisInitialized(_this), "_btnOpen", document.querySelector(".nav__btn--add-recipe"));
+
+    _defineProperty(_assertThisInitialized(_this), "_btnClose", document.querySelector(".btn--close-modal"));
+
+    _this._addHandlerShowWindow();
+
+    _this._addHandlerHideWindow();
+
+    return _this;
+  }
+
+  _createClass(AddRecipeView, [{
+    key: "toggleWindow",
+    value: function toggleWindow() {
+      this._overlay.classList.toggle("hidden");
+
+      this._window.classList.toggle("hidden");
+    }
+  }, {
+    key: "_addHandlerShowWindow",
+    value: function _addHandlerShowWindow() {
+      this._btnOpen.addEventListener("click", this.toggleWindow.bind(this));
+    }
+  }, {
+    key: "_addHandlerHideWindow",
+    value: function _addHandlerHideWindow() {
+      this._btnClose.addEventListener("click", this.toggleWindow.bind(this));
+
+      this._overlay.addEventListener("click", this.toggleWindow.bind(this));
+    }
+  }, {
+    key: "addHandlerUpload",
+    value: function addHandlerUpload(handler) {
+      this._parentElement.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        var dataArr = _toConsumableArray(new FormData(this));
+
+        var data = Object.fromEntries(dataArr);
+        handler(data);
+      });
+    }
+  }, {
+    key: "_generateMarkup",
+    value: function _generateMarkup() {}
+  }]);
+
+  return AddRecipeView;
+}(_View2.default);
+
+var _default = new AddRecipeView();
+
+exports.default = _default;
 },{"./View.js":"src/js/views/View.js","../../img/icons.svg":"src/img/icons.svg"}],"src/js/controller.js":[function(require,module,exports) {
 "use strict";
 
@@ -14122,6 +14378,8 @@ var _resultsView = _interopRequireDefault(require("./views/resultsView.js"));
 var _bookmarksView = _interopRequireDefault(require("./views/bookmarksView.js"));
 
 var _paginationView = _interopRequireDefault(require("./views/paginationView.js"));
+
+var _addRecipeView = _interopRequireDefault(require("./views/addRecipeView.js"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -14272,6 +14530,40 @@ var controlBookmarks = function controlBookmarks() {
   _bookmarksView.default.render(model.state.bookmarks);
 };
 
+var controlAddRecipe = /*#__PURE__*/function () {
+  var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(newRecipe) {
+    return regeneratorRuntime.wrap(function _callee3$(_context3) {
+      while (1) {
+        switch (_context3.prev = _context3.next) {
+          case 0:
+            _context3.prev = 0;
+            _context3.next = 3;
+            return model.uploadRecipe(newRecipe);
+
+          case 3:
+            _context3.next = 9;
+            break;
+
+          case 5:
+            _context3.prev = 5;
+            _context3.t0 = _context3["catch"](0);
+            console.log("🧨", _context3.t0);
+
+            _addRecipeView.default.renderError(_context3.t0.message);
+
+          case 9:
+          case "end":
+            return _context3.stop();
+        }
+      }
+    }, _callee3, null, [[0, 5]]);
+  }));
+
+  return function controlAddRecipe(_x) {
+    return _ref3.apply(this, arguments);
+  };
+}();
+
 var init = function init() {
   _bookmarksView.default.addHandlerRender(controlBookmarks);
 
@@ -14284,10 +14576,12 @@ var init = function init() {
   _searchView.default.addHandlerSearch(controlSearchResults);
 
   _paginationView.default.addHandlerClick(controlPagination);
+
+  _addRecipeView.default.addHandlerUpload(controlAddRecipe);
 };
 
 init(); //Explication suite du projet (BookMark, localStorage etc)
-},{"regenerator-runtime/runtime":"node_modules/regenerator-runtime/runtime.js","core-js/stable":"node_modules/core-js/stable/index.js","./model.js":"src/js/model.js","./views/recipeView.js":"src/js/views/recipeView.js","./views/searchView.js":"src/js/views/searchView.js","./views/resultsView.js":"src/js/views/resultsView.js","./views/bookmarksView.js":"src/js/views/bookmarksView.js","./views/paginationView.js":"src/js/views/paginationView.js"}],"../../../../../Users/Asus/AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"regenerator-runtime/runtime":"node_modules/regenerator-runtime/runtime.js","core-js/stable":"node_modules/core-js/stable/index.js","./model.js":"src/js/model.js","./views/recipeView.js":"src/js/views/recipeView.js","./views/searchView.js":"src/js/views/searchView.js","./views/resultsView.js":"src/js/views/resultsView.js","./views/bookmarksView.js":"src/js/views/bookmarksView.js","./views/paginationView.js":"src/js/views/paginationView.js","./views/addRecipeView.js":"src/js/views/addRecipeView.js"}],"../../../../../Users/Asus/AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -14315,7 +14609,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "63943" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "54300" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

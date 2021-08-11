@@ -1,6 +1,7 @@
 import { async } from "regenerator-runtime";
-import { API_URL, RES_PER_PAGE } from "./config.js";
-import { getJSON } from "./helper.js";
+import { API_URL, RES_PER_PAGE ,KEY} from "./config.js";
+import { getJSON,sendJSON } from "./helper.js";
+
 
 export const state = {
   recipe: {},
@@ -27,10 +28,10 @@ export const loadRecipe = async function (id) {
       cookingTime: recipe.cooking_time,
       ingredients: recipe.ingredients,
     };
-    if(state.bookmarks.some(bookmard=> bookmard.id === id)){
-      state.recipe.bookmarked = true; 
+    if (state.bookmarks.some(bookmard => bookmard.id === id)) {
+      state.recipe.bookmarked = true;
     } else {
-      state.recipe.bookmarked = false; 
+      state.recipe.bookmarked = false;
     }
     console.log(state.recipe);
   } catch (error) {
@@ -75,9 +76,9 @@ export const updateServings = function (newServings) {
   state.recipe.servings = newServings;
 };
 
-const persistBookmarks = function() {
-  localStorage.setItem("bookmarks",JSON.stringify(state.bookmarks));
-}
+const persistBookmarks = function () {
+  localStorage.setItem("bookmarks", JSON.stringify(state.bookmarks));
+};
 
 export const addBookmark = function (recipe) {
   //Add bookmark
@@ -88,26 +89,52 @@ export const addBookmark = function (recipe) {
   persistBookmarks();
 };
 
-export const deleteBookmark = function(id) {
+export const deleteBookmark = function (id) {
   // Delete bookmarked
   const index = state.bookmarks.findIndex(el => el.id === id);
-  state.bookmarks.splice(index,1);
+  state.bookmarks.splice(index, 1);
 
   // Mark current recipe as NOT bookmarked
-  if(id === state.recipe.id) state.recipe.bookmarked = false;
+  if (id === state.recipe.id) state.recipe.bookmarked = false;
   persistBookmarks();
-}
+};
 
-const init = function() {
+const init = function () {
   const storage = localStorage.getItem("bookmarks");
-  if(storage) state.bookmarks = JSON.parse(storage);
-}
+  if (storage) state.bookmarks = JSON.parse(storage);
+};
 
 init();
 
-const clearBookmarks = function() {
+const clearBookmarks = function () {
   localStorage.clear("bookmarks");
-}
+};
 // clearBookmarks();
 
-//Explication suite projet (Uploader une recette);
+export const uploadRecipe = async function (newRecipe) {
+  try {
+    const ingredients = Object.entries(newRecipe)
+      .filter(entry => entry[0].startsWith("ingredient") && entry[1] !== "")
+      .map(ing => {
+        const ingArr = ing[1].replaceAll(" ", "").split(",");
+        if (ingArr.length !== 3) throw new Error("Wrong ingredient format ! Please use the correct format 😉");
+        const [quantity, unit, description] = ingArr;
+        return { quantity: quantity ? +quantity : null, unit, description };
+      });
+
+    const recipe = {
+      title: newRecipe.title,
+      source_url: newRecipe.sourceUrl,
+      image_url: newRecipe.image,
+      publisher: newRecipe.publisher,
+      cooking_time: +newRecipe.cookingTime,
+      servings: +newRecipe.servings,
+      ingredients,
+    };
+    console.log(ingredients);
+    const data = await sendJSON(`${API_URL}?search=${recipe.title}&key=${KEY}`,recipe);
+    console.log(data);
+  } catch (error) {
+    throw error;
+  }
+};
