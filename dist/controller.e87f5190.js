@@ -874,7 +874,1542 @@ try {
   }
 }
 
-},{}],"node_modules/core-js/internals/global.js":[function(require,module,exports) {
+},{}],"src/js/config.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MODAL_CLOSE_SEC = exports.KEY = exports.RES_PER_PAGE = exports.TIMEOUT_SEC = exports.API_URL = void 0;
+var API_URL = 'https://forkify-api.herokuapp.com/api/v2/recipes/';
+exports.API_URL = API_URL;
+var TIMEOUT_SEC = 10;
+exports.TIMEOUT_SEC = TIMEOUT_SEC;
+var RES_PER_PAGE = 10;
+exports.RES_PER_PAGE = RES_PER_PAGE;
+var KEY = '8e7de03f-831a-4129-a575-6655c4890103';
+exports.KEY = KEY;
+var MODAL_CLOSE_SEC = 2.5;
+exports.MODAL_CLOSE_SEC = MODAL_CLOSE_SEC;
+},{}],"src/js/helper.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.AJAX = void 0;
+
+var _regeneratorRuntime = require("regenerator-runtime");
+
+var _config = require("./config.js");
+
+function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
+
+function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
+
+var timeout = function timeout(s) {
+  return new Promise(function (_, reject) {
+    setTimeout(function () {
+      reject(new Error("Request took too long! Timeout after ".concat(s, " second")));
+    }, s * 1000);
+  });
+};
+
+var AJAX = /*#__PURE__*/function () {
+  var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(url) {
+    var uploadData,
+        fetchPro,
+        res,
+        data,
+        _args = arguments;
+    return regeneratorRuntime.wrap(function _callee$(_context) {
+      while (1) {
+        switch (_context.prev = _context.next) {
+          case 0:
+            uploadData = _args.length > 1 && _args[1] !== undefined ? _args[1] : undefined;
+            _context.prev = 1;
+            fetchPro = uploadData ? fetch(url, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(uploadData)
+            }) : fetch(url);
+            _context.next = 5;
+            return Promise.race([fetchPro, timeout(_config.TIMEOUT_SEC)]);
+
+          case 5:
+            res = _context.sent;
+            _context.next = 8;
+            return res.json();
+
+          case 8:
+            data = _context.sent;
+
+            if (res.ok) {
+              _context.next = 11;
+              break;
+            }
+
+            throw new Error("".concat(data.message, " (").concat(res.status, ")"));
+
+          case 11:
+            return _context.abrupt("return", data);
+
+          case 14:
+            _context.prev = 14;
+            _context.t0 = _context["catch"](1);
+            throw _context.t0;
+
+          case 17:
+          case "end":
+            return _context.stop();
+        }
+      }
+    }, _callee, null, [[1, 14]]);
+  }));
+
+  return function AJAX(_x) {
+    return _ref.apply(this, arguments);
+  };
+}();
+/*
+export const getJSON = async function (url) {
+  try {
+    const fetchPro = fetch(url);
+    const res = await Promise.race([fetchPro, timeout(TIMEOUT_SEC)]);
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(`${data.message} (${res.status})`);
+    return data;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const sendJSON = async function (url, uploadData) {
+  try {
+    const fetchPro = fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(uploadData),
+    });
+
+    const res = await Promise.race([fetchPro, timeout(TIMEOUT_SEC)]);
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(`${data.message} (${res.status})`);
+    return data;
+  } catch (err) {
+    throw err;
+  }
+};
+*/
+
+
+exports.AJAX = AJAX;
+},{"regenerator-runtime":"node_modules/regenerator-runtime/runtime.js","./config.js":"src/js/config.js"}],"src/js/model.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.uploadRecipe = exports.deleteBookmark = exports.addBookmark = exports.updateServings = exports.getSearchResultsPage = exports.loadSearchResults = exports.loadRecipe = exports.state = void 0;
+
+var _regeneratorRuntime = require("regenerator-runtime");
+
+var _config = require("./config.js");
+
+var _helper = _interopRequireDefault(require("./helper.js"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+function _iterableToArrayLimit(arr, i) { var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]; if (_i == null) return; var _arr = []; var _n = true; var _d = false; var _s, _e; try { for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
+function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
+
+function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var state = {
+  recipe: {},
+  search: {
+    query: '',
+    results: [],
+    page: 1,
+    resultsPerPage: _config.RES_PER_PAGE
+  },
+  bookmarks: []
+};
+exports.state = state;
+
+var createRecipeObject = function createRecipeObject(data) {
+  var recipe = data.data.recipe;
+  return _objectSpread({
+    id: recipe.id,
+    title: recipe.title,
+    publisher: recipe.publisher,
+    sourceUrl: recipe.source_url,
+    image: recipe.image_url,
+    servings: recipe.servings,
+    cookingTime: recipe.cooking_time,
+    ingredients: recipe.ingredients
+  }, recipe.key && {
+    key: recipe.key
+  });
+};
+
+var loadRecipe = /*#__PURE__*/function () {
+  var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(id) {
+    var data;
+    return regeneratorRuntime.wrap(function _callee$(_context) {
+      while (1) {
+        switch (_context.prev = _context.next) {
+          case 0:
+            _context.prev = 0;
+            _context.next = 3;
+            return (0, _helper.default)("".concat(_config.API_URL).concat(id, "?key=").concat(_config.KEY));
+
+          case 3:
+            data = _context.sent;
+            state.recipe = createRecipeObject(data);
+            if (state.bookmarks.some(function (bookmark) {
+              return bookmark.id === id;
+            })) state.recipe.bookmarked = true;else state.recipe.bookmarked = false;
+            console.log(state.recipe);
+            _context.next = 13;
+            break;
+
+          case 9:
+            _context.prev = 9;
+            _context.t0 = _context["catch"](0);
+            // Temp error handling
+            console.error("".concat(_context.t0, " \uD83D\uDCA5\uD83D\uDCA5\uD83D\uDCA5\uD83D\uDCA5"));
+            throw _context.t0;
+
+          case 13:
+          case "end":
+            return _context.stop();
+        }
+      }
+    }, _callee, null, [[0, 9]]);
+  }));
+
+  return function loadRecipe(_x) {
+    return _ref.apply(this, arguments);
+  };
+}();
+
+exports.loadRecipe = loadRecipe;
+
+var loadSearchResults = /*#__PURE__*/function () {
+  var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(query) {
+    var data;
+    return regeneratorRuntime.wrap(function _callee2$(_context2) {
+      while (1) {
+        switch (_context2.prev = _context2.next) {
+          case 0:
+            _context2.prev = 0;
+            state.search.query = query;
+            _context2.next = 4;
+            return (0, _helper.default)("".concat(_config.API_URL, "?search=").concat(query, "&key=").concat(_config.KEY));
+
+          case 4:
+            data = _context2.sent;
+            console.log(data);
+            state.search.results = data.data.recipes.map(function (rec) {
+              return _objectSpread({
+                id: rec.id,
+                title: rec.title,
+                publisher: rec.publisher,
+                image: rec.image_url
+              }, rec.key && {
+                key: rec.key
+              });
+            });
+            state.search.page = 1;
+            _context2.next = 14;
+            break;
+
+          case 10:
+            _context2.prev = 10;
+            _context2.t0 = _context2["catch"](0);
+            console.error("".concat(_context2.t0, " \uD83D\uDCA5\uD83D\uDCA5\uD83D\uDCA5\uD83D\uDCA5"));
+            throw _context2.t0;
+
+          case 14:
+          case "end":
+            return _context2.stop();
+        }
+      }
+    }, _callee2, null, [[0, 10]]);
+  }));
+
+  return function loadSearchResults(_x2) {
+    return _ref2.apply(this, arguments);
+  };
+}();
+
+exports.loadSearchResults = loadSearchResults;
+
+var getSearchResultsPage = function getSearchResultsPage() {
+  var page = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : state.search.page;
+  state.search.page = page;
+  var start = (page - 1) * state.search.resultsPerPage; // 0
+
+  var end = page * state.search.resultsPerPage; // 9
+
+  return state.search.results.slice(start, end);
+};
+
+exports.getSearchResultsPage = getSearchResultsPage;
+
+var updateServings = function updateServings(newServings) {
+  state.recipe.ingredients.forEach(function (ing) {
+    ing.quantity = ing.quantity * newServings / state.recipe.servings; // newQt = oldQt * newServings / oldServings // 2 * 8 / 4 = 4
+  });
+  state.recipe.servings = newServings;
+};
+
+exports.updateServings = updateServings;
+
+var persistBookmarks = function persistBookmarks() {
+  localStorage.setItem('bookmarks', JSON.stringify(state.bookmarks));
+};
+
+var addBookmark = function addBookmark(recipe) {
+  // Add bookmark
+  state.bookmarks.push(recipe); // Mark current recipe as bookmarked
+
+  if (recipe.id === state.recipe.id) state.recipe.bookmarked = true;
+  persistBookmarks();
+};
+
+exports.addBookmark = addBookmark;
+
+var deleteBookmark = function deleteBookmark(id) {
+  // Delete bookmark
+  var index = state.bookmarks.findIndex(function (el) {
+    return el.id === id;
+  });
+  state.bookmarks.splice(index, 1); // Mark current recipe as NOT bookmarked
+
+  if (id === state.recipe.id) state.recipe.bookmarked = false;
+  persistBookmarks();
+};
+
+exports.deleteBookmark = deleteBookmark;
+
+var init = function init() {
+  var storage = localStorage.getItem('bookmarks');
+  if (storage) state.bookmarks = JSON.parse(storage);
+};
+
+init();
+
+var clearBookmarks = function clearBookmarks() {
+  localStorage.clear('bookmarks');
+}; // clearBookmarks();
+
+
+var uploadRecipe = /*#__PURE__*/function () {
+  var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(newRecipe) {
+    var ingredients, recipe, data;
+    return regeneratorRuntime.wrap(function _callee3$(_context3) {
+      while (1) {
+        switch (_context3.prev = _context3.next) {
+          case 0:
+            _context3.prev = 0;
+            ingredients = Object.entries(newRecipe).filter(function (entry) {
+              return entry[0].startsWith('ingredient') && entry[1] !== '';
+            }).map(function (ing) {
+              var ingArr = ing[1].split(',').map(function (el) {
+                return el.trim();
+              }); // const ingArr = ing[1].replaceAll(' ', '').split(',');
+
+              if (ingArr.length !== 3) throw new Error('Wrong ingredient fromat! Please use the correct format :)');
+
+              var _ingArr = _slicedToArray(ingArr, 3),
+                  quantity = _ingArr[0],
+                  unit = _ingArr[1],
+                  description = _ingArr[2];
+
+              return {
+                quantity: quantity ? +quantity : null,
+                unit: unit,
+                description: description
+              };
+            });
+            recipe = {
+              title: newRecipe.title,
+              source_url: newRecipe.sourceUrl,
+              image_url: newRecipe.image,
+              publisher: newRecipe.publisher,
+              cooking_time: +newRecipe.cookingTime,
+              servings: +newRecipe.servings,
+              ingredients: ingredients
+            };
+            _context3.next = 5;
+            return (0, _helper.default)("".concat(_config.API_URL, "?key=").concat(_config.KEY), recipe);
+
+          case 5:
+            data = _context3.sent;
+            state.recipe = createRecipeObject(data);
+            addBookmark(state.recipe);
+            _context3.next = 13;
+            break;
+
+          case 10:
+            _context3.prev = 10;
+            _context3.t0 = _context3["catch"](0);
+            throw _context3.t0;
+
+          case 13:
+          case "end":
+            return _context3.stop();
+        }
+      }
+    }, _callee3, null, [[0, 10]]);
+  }));
+
+  return function uploadRecipe(_x3) {
+    return _ref3.apply(this, arguments);
+  };
+}();
+
+exports.uploadRecipe = uploadRecipe;
+},{"regenerator-runtime":"node_modules/regenerator-runtime/runtime.js","./config.js":"src/js/config.js","./helper.js":"src/js/helper.js"}],"src/img/icons.svg":[function(require,module,exports) {
+module.exports = "/icons.ae3c38d5.svg";
+},{}],"src/js/views/View.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _icons = _interopRequireDefault(require("../../img/icons.svg"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var View = /*#__PURE__*/function () {
+  function View() {
+    _classCallCheck(this, View);
+
+    _defineProperty(this, "_data", void 0);
+  }
+
+  _createClass(View, [{
+    key: "render",
+    value:
+    /**
+     * Render the received object to the DOM
+     * @param {Object | Object[]} data The data to be rendered (e.g. recipe)
+     * @param {boolean} [render=true] If false, create markup string instead of rendering to the DOM
+     * @returns {undefined | string} A markup string is returned if render=false
+     * @this {Object} View instance
+     * @author Jonas Schmedtmann
+     * @todo Finish implementation
+     */
+    function render(data) {
+      var _render = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+
+      if (!data || Array.isArray(data) && data.length === 0) return this.renderError();
+      this._data = data;
+
+      var markup = this._generateMarkup();
+
+      if (!_render) return markup;
+
+      this._clear();
+
+      this._parentElement.insertAdjacentHTML('afterbegin', markup);
+    }
+  }, {
+    key: "update",
+    value: function update(data) {
+      this._data = data;
+
+      var newMarkup = this._generateMarkup();
+
+      var newDOM = document.createRange().createContextualFragment(newMarkup);
+      var newElements = Array.from(newDOM.querySelectorAll('*'));
+      var curElements = Array.from(this._parentElement.querySelectorAll('*'));
+      newElements.forEach(function (newEl, i) {
+        var _newEl$firstChild;
+
+        var curEl = curElements[i]; // console.log(curEl, newEl.isEqualNode(curEl));
+        // Updates changed TEXT
+
+        if (!newEl.isEqualNode(curEl) && ((_newEl$firstChild = newEl.firstChild) === null || _newEl$firstChild === void 0 ? void 0 : _newEl$firstChild.nodeValue.trim()) !== '') {
+          // console.log('💥', newEl.firstChild.nodeValue.trim());
+          curEl.textContent = newEl.textContent;
+        } // Updates changed ATTRIBUES
+
+
+        if (!newEl.isEqualNode(curEl)) Array.from(newEl.attributes).forEach(function (attr) {
+          return curEl.setAttribute(attr.name, attr.value);
+        });
+      });
+    }
+  }, {
+    key: "_clear",
+    value: function _clear() {
+      this._parentElement.innerHTML = '';
+    }
+  }, {
+    key: "renderSpinner",
+    value: function renderSpinner() {
+      var markup = "\n      <div class=\"spinner\">\n        <svg>\n          <use href=\"".concat(_icons.default, "#icon-loader\"></use>\n        </svg>\n      </div>\n    ");
+
+      this._clear();
+
+      this._parentElement.insertAdjacentHTML('afterbegin', markup);
+    }
+  }, {
+    key: "renderError",
+    value: function renderError() {
+      var message = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this._errorMessage;
+      var markup = "\n      <div class=\"error\">\n        <div>\n          <svg>\n            <use href=\"".concat(_icons.default, "#icon-alert-triangle\"></use>\n          </svg>\n        </div>\n        <p>").concat(message, "</p>\n      </div>\n    ");
+
+      this._clear();
+
+      this._parentElement.insertAdjacentHTML('afterbegin', markup);
+    }
+  }, {
+    key: "renderMessage",
+    value: function renderMessage() {
+      var message = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this._message;
+      var markup = "\n      <div class=\"message\">\n        <div>\n          <svg>\n            <use href=\"".concat(_icons.default, "#icon-smile\"></use>\n          </svg>\n        </div>\n        <p>").concat(message, "</p>\n      </div>\n    ");
+
+      this._clear();
+
+      this._parentElement.insertAdjacentHTML('afterbegin', markup);
+    }
+  }]);
+
+  return View;
+}();
+
+exports.default = View;
+},{"../../img/icons.svg":"src/img/icons.svg"}],"node_modules/fractional/index.js":[function(require,module,exports) {
+/*
+fraction.js
+A Javascript fraction library.
+
+Copyright (c) 2009  Erik Garrison <erik@hypervolu.me>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+*/
+
+
+/* Fractions */
+/* 
+ *
+ * Fraction objects are comprised of a numerator and a denomenator.  These
+ * values can be accessed at fraction.numerator and fraction.denomenator.
+ *
+ * Fractions are always returned and stored in lowest-form normalized format.
+ * This is accomplished via Fraction.normalize.
+ *
+ * The following mathematical operations on fractions are supported:
+ *
+ * Fraction.equals
+ * Fraction.add
+ * Fraction.subtract
+ * Fraction.multiply
+ * Fraction.divide
+ *
+ * These operations accept both numbers and fraction objects.  (Best results
+ * are guaranteed when the input is a fraction object.)  They all return a new
+ * Fraction object.
+ *
+ * Usage:
+ *
+ * TODO
+ *
+ */
+
+/*
+ * The Fraction constructor takes one of:
+ *   an explicit numerator (integer) and denominator (integer),
+ *   a string representation of the fraction (string),
+ *   or a floating-point number (float)
+ *
+ * These initialization methods are provided for convenience.  Because of
+ * rounding issues the best results will be given when the fraction is
+ * constructed from an explicit integer numerator and denomenator, and not a
+ * decimal number.
+ *
+ *
+ * e.g. new Fraction(1, 2) --> 1/2
+ *      new Fraction('1/2') --> 1/2
+ *      new Fraction('2 3/4') --> 11/4  (prints as 2 3/4)
+ *
+ */
+Fraction = function(numerator, denominator)
+{
+    /* double argument invocation */
+    if (typeof numerator !== 'undefined' && denominator) {
+        if (typeof(numerator) === 'number' && typeof(denominator) === 'number') {
+            this.numerator = numerator;
+            this.denominator = denominator;
+        } else if (typeof(numerator) === 'string' && typeof(denominator) === 'string') {
+            // what are they?
+            // hmm....
+            // assume they are ints?
+            this.numerator = parseInt(numerator);
+            this.denominator = parseInt(denominator);
+        }
+    /* single-argument invocation */
+    } else if (typeof denominator === 'undefined') {
+        num = numerator; // swap variable names for legibility
+        if (typeof(num) === 'number') {  // just a straight number init
+            this.numerator = num;
+            this.denominator = 1;
+        } else if (typeof(num) === 'string') {
+            var a, b;  // hold the first and second part of the fraction, e.g. a = '1' and b = '2/3' in 1 2/3
+                       // or a = '2/3' and b = undefined if we are just passed a single-part number
+            var arr = num.split(' ')
+            if (arr[0]) a = arr[0]
+            if (arr[1]) b = arr[1]
+            /* compound fraction e.g. 'A B/C' */
+            //  if a is an integer ...
+            if (a % 1 === 0 && b && b.match('/')) {
+                return (new Fraction(a)).add(new Fraction(b));
+            } else if (a && !b) {
+                /* simple fraction e.g. 'A/B' */
+                if (typeof(a) === 'string' && a.match('/')) {
+                    // it's not a whole number... it's actually a fraction without a whole part written
+                    var f = a.split('/');
+                    this.numerator = f[0]; this.denominator = f[1];
+                /* string floating point */
+                } else if (typeof(a) === 'string' && a.match('\.')) {
+                    return new Fraction(parseFloat(a));
+                /* whole number e.g. 'A' */
+                } else { // just passed a whole number as a string
+                    this.numerator = parseInt(a);
+                    this.denominator = 1;
+                }
+            } else {
+                return undefined; // could not parse
+            }
+        }
+    }
+    this.normalize();
+}
+
+
+Fraction.prototype.clone = function()
+{
+    return new Fraction(this.numerator, this.denominator);
+}
+
+
+/* pretty-printer, converts fractions into whole numbers and fractions */
+Fraction.prototype.toString = function()
+{
+    if (this.denominator==='NaN') return 'NaN'
+    var wholepart = (this.numerator/this.denominator>0) ?
+      Math.floor(this.numerator / this.denominator) :
+      Math.ceil(this.numerator / this.denominator)
+    var numerator = this.numerator % this.denominator 
+    var denominator = this.denominator;
+    var result = []; 
+    if (wholepart != 0)  
+        result.push(wholepart);
+    if (numerator != 0)  
+        result.push(((wholepart===0) ? numerator : Math.abs(numerator)) + '/' + denominator);
+    return result.length > 0 ? result.join(' ') : 0;
+}
+
+
+/* destructively rescale the fraction by some integral factor */
+Fraction.prototype.rescale = function(factor)
+{
+    this.numerator *= factor;
+    this.denominator *= factor;
+    return this;
+}
+
+
+Fraction.prototype.add = function(b)
+{
+    var a = this.clone();
+    if (b instanceof Fraction) {
+        b = b.clone();
+    } else {
+        b = new Fraction(b);
+    }
+    td = a.denominator;
+    a.rescale(b.denominator);
+    b.rescale(td);
+
+    a.numerator += b.numerator;
+
+    return a.normalize();
+}
+
+
+Fraction.prototype.subtract = function(b)
+{
+    var a = this.clone();
+    if (b instanceof Fraction) {
+        b = b.clone();  // we scale our argument destructively, so clone
+    } else {
+        b = new Fraction(b);
+    }
+    td = a.denominator;
+    a.rescale(b.denominator);
+    b.rescale(td);
+
+    a.numerator -= b.numerator;
+
+    return a.normalize();
+}
+
+
+Fraction.prototype.multiply = function(b)
+{
+    var a = this.clone();
+    if (b instanceof Fraction)
+    {
+        a.numerator *= b.numerator;
+        a.denominator *= b.denominator;
+    } else if (typeof b === 'number') {
+        a.numerator *= b;
+    } else {
+        return a.multiply(new Fraction(b));
+    }
+    return a.normalize();
+}
+
+Fraction.prototype.divide = function(b)
+{
+    var a = this.clone();
+    if (b instanceof Fraction)
+    {
+        a.numerator *= b.denominator;
+        a.denominator *= b.numerator;
+    } else if (typeof b === 'number') {
+        a.denominator *= b;
+    } else {
+        return a.divide(new Fraction(b));
+    }
+    return a.normalize();
+}
+
+Fraction.prototype.equals = function(b)
+{
+    if (!(b instanceof Fraction)) {
+        b = new Fraction(b);
+    }
+    // fractions that are equal should have equal normalized forms
+    var a = this.clone().normalize();
+    var b = b.clone().normalize();
+    return (a.numerator === b.numerator && a.denominator === b.denominator);
+}
+
+
+/* Utility functions */
+
+/* Destructively normalize the fraction to its smallest representation. 
+ * e.g. 4/16 -> 1/4, 14/28 -> 1/2, etc.
+ * This is called after all math ops.
+ */
+Fraction.prototype.normalize = (function()
+{
+
+    var isFloat = function(n)
+    {
+        return (typeof(n) === 'number' && 
+                ((n > 0 && n % 1 > 0 && n % 1 < 1) || 
+                 (n < 0 && n % -1 < 0 && n % -1 > -1))
+               );
+    }
+
+    var roundToPlaces = function(n, places) 
+    {
+        if (!places) {
+            return Math.round(n);
+        } else {
+            var scalar = Math.pow(10, places);
+            return Math.round(n*scalar)/scalar;
+        }
+    }
+        
+    return (function() {
+
+        // XXX hackish.  Is there a better way to address this issue?
+        //
+        /* first check if we have decimals, and if we do eliminate them
+         * multiply by the 10 ^ number of decimal places in the number
+         * round the number to nine decimal places
+         * to avoid js floating point funnies
+         */
+        if (isFloat(this.denominator)) {
+            var rounded = roundToPlaces(this.denominator, 9);
+            var scaleup = Math.pow(10, rounded.toString().split('.')[1].length);
+            this.denominator = Math.round(this.denominator * scaleup); // this !!! should be a whole number
+            //this.numerator *= scaleup;
+            this.numerator *= scaleup;
+        } 
+        if (isFloat(this.numerator)) {
+            var rounded = roundToPlaces(this.numerator, 9);
+            var scaleup = Math.pow(10, rounded.toString().split('.')[1].length);
+            this.numerator = Math.round(this.numerator * scaleup); // this !!! should be a whole number
+            //this.numerator *= scaleup;
+            this.denominator *= scaleup;
+        }
+        var gcf = Fraction.gcf(this.numerator, this.denominator);
+        this.numerator /= gcf;
+        this.denominator /= gcf;
+        if ((this.numerator < 0 && this.denominator < 0) || (this.numerator > 0 && this.denominator < 0)) {
+            this.numerator *= -1;
+            this.denominator *= -1;
+        }
+        return this;
+    });
+
+})();
+
+
+/* Takes two numbers and returns their greatest common factor.
+ */
+Fraction.gcf = function(a, b)
+{
+
+    var common_factors = [];
+    var fa = Fraction.primeFactors(a);
+    var fb = Fraction.primeFactors(b);
+    // for each factor in fa
+    // if it's also in fb
+    // put it into the common factors
+    fa.forEach(function (factor) 
+    { 
+        var i = fb.indexOf(factor);
+        if (i >= 0) {
+            common_factors.push(factor);
+            fb.splice(i,1); // remove from fb
+        }
+    });
+
+    if (common_factors.length === 0)
+        return 1;
+
+    var gcf = (function() {
+        var r = common_factors[0];
+        var i;
+        for (i=1;i<common_factors.length;i++)
+        {
+            r = r * common_factors[i];
+        }
+        return r;
+    })();
+
+    return gcf;
+
+};
+
+
+// Adapted from: 
+// http://www.btinternet.com/~se16/js/factor.htm
+Fraction.primeFactors = function(n) 
+{
+
+    var num = Math.abs(n);
+    var factors = [];
+    var _factor = 2;  // first potential prime factor
+
+    while (_factor * _factor <= num)  // should we keep looking for factors?
+    {      
+      if (num % _factor === 0)  // this is a factor
+        { 
+            factors.push(_factor);  // so keep it
+            num = num/_factor;  // and divide our search point by it
+        }
+        else
+        {
+            _factor++;  // and increment
+        }
+    }
+
+    if (num != 1)                    // If there is anything left at the end...
+    {                                // ...this must be the last prime factor
+        factors.push(num);           //    so it too should be recorded
+    }
+
+    return factors;                  // Return the prime factors
+}
+
+module.exports.Fraction = Fraction
+
+},{}],"src/js/views/recipeView.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _View2 = _interopRequireDefault(require("./View.js"));
+
+var _icons = _interopRequireDefault(require("../../img/icons.svg"));
+
+var _fractional = require("fractional");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var RecipeView = /*#__PURE__*/function (_View) {
+  _inherits(RecipeView, _View);
+
+  var _super = _createSuper(RecipeView);
+
+  function RecipeView() {
+    var _this;
+
+    _classCallCheck(this, RecipeView);
+
+    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    _this = _super.call.apply(_super, [this].concat(args));
+
+    _defineProperty(_assertThisInitialized(_this), "_parentElement", document.querySelector('.recipe'));
+
+    _defineProperty(_assertThisInitialized(_this), "_errorMessage", 'We could not find that recipe. Please try another one!');
+
+    _defineProperty(_assertThisInitialized(_this), "_message", '');
+
+    return _this;
+  }
+
+  _createClass(RecipeView, [{
+    key: "addHandlerRender",
+    value: function addHandlerRender(handler) {
+      ['hashchange', 'load'].forEach(function (ev) {
+        return window.addEventListener(ev, handler);
+      });
+    }
+  }, {
+    key: "addHandlerUpdateServings",
+    value: function addHandlerUpdateServings(handler) {
+      this._parentElement.addEventListener('click', function (e) {
+        var btn = e.target.closest('.btn--update-servings');
+        if (!btn) return;
+        var updateTo = btn.dataset.updateTo;
+        if (+updateTo > 0) handler(+updateTo);
+      });
+    }
+  }, {
+    key: "addHandlerAddBookmark",
+    value: function addHandlerAddBookmark(handler) {
+      this._parentElement.addEventListener('click', function (e) {
+        var btn = e.target.closest('.btn--bookmark');
+        if (!btn) return;
+        handler();
+      });
+    }
+  }, {
+    key: "_generateMarkup",
+    value: function _generateMarkup() {
+      return "\n      <figure class=\"recipe__fig\">\n        <img src=\"".concat(this._data.image, "\" alt=\"").concat(this._data.title, "\" class=\"recipe__img\" />\n        <h1 class=\"recipe__title\">\n          <span>").concat(this._data.title, "</span>\n        </h1>\n      </figure>\n\n      <div class=\"recipe__details\">\n        <div class=\"recipe__info\">\n          <svg class=\"recipe__info-icon\">\n            <use href=\"").concat(_icons.default, "#icon-clock\"></use>\n          </svg>\n          <span class=\"recipe__info-data recipe__info-data--minutes\">").concat(this._data.cookingTime, "</span>\n          <span class=\"recipe__info-text\">minutes</span>\n        </div>\n        <div class=\"recipe__info\">\n          <svg class=\"recipe__info-icon\">\n            <use href=\"").concat(_icons.default, "#icon-users\"></use>\n          </svg>\n          <span class=\"recipe__info-data recipe__info-data--people\">").concat(this._data.servings, "</span>\n          <span class=\"recipe__info-text\">servings</span>\n\n          <div class=\"recipe__info-buttons\">\n            <button class=\"btn--tiny btn--update-servings\" data-update-to=\"").concat(this._data.servings - 1, "\">\n              <svg>\n                <use href=\"").concat(_icons.default, "#icon-minus-circle\"></use>\n              </svg>\n            </button>\n            <button class=\"btn--tiny btn--update-servings\" data-update-to=\"").concat(this._data.servings + 1, "\">\n              <svg>\n                <use href=\"").concat(_icons.default, "#icon-plus-circle\"></use>\n              </svg>\n            </button>\n          </div>\n        </div>\n\n        <div class=\"recipe__user-generated ").concat(this._data.key ? '' : 'hidden', "\">\n          <svg>\n            <use href=\"").concat(_icons.default, "#icon-user\"></use>\n          </svg>\n        </div>\n        <button class=\"btn--round btn--bookmark\">\n          <svg class=\"\">\n            <use href=\"").concat(_icons.default, "#icon-bookmark").concat(this._data.bookmarked ? '-fill' : '', "\"></use>\n          </svg>\n        </button>\n      </div>\n\n      <div class=\"recipe__ingredients\">\n        <h2 class=\"heading--2\">Recipe ingredients</h2>\n        <ul class=\"recipe__ingredient-list\">\n          ").concat(this._data.ingredients.map(this._generateMarkupIngredient).join(''), "\n      </div>\n\n      <div class=\"recipe__directions\">\n        <h2 class=\"heading--2\">How to cook it</h2>\n        <p class=\"recipe__directions-text\">\n          This recipe was carefully designed and tested by\n          <span class=\"recipe__publisher\">").concat(this._data.publisher, "</span>. Please check out\n          directions at their website.\n        </p>\n        <a\n          class=\"btn--small recipe__btn\"\n          href=\"").concat(this._data.sourceUrl, "\"\n          target=\"_blank\"\n        >\n          <span>Directions</span>\n          <svg class=\"search__icon\">\n            <use href=\"").concat(_icons.default, "#icon-arrow-right\"></use>\n          </svg>\n        </a>\n      </div>\n    ");
+    }
+  }, {
+    key: "_generateMarkupIngredient",
+    value: function _generateMarkupIngredient(ing) {
+      return "\n    <li class=\"recipe__ingredient\">\n      <svg class=\"recipe__icon\">\n        <use href=\"".concat(_icons.default, "#icon-check\"></use>\n      </svg>\n      <div class=\"recipe__quantity\">").concat(ing.quantity ? new _fractional.Fraction(ing.quantity).toString() : '', "</div>\n      <div class=\"recipe__description\">\n        <span class=\"recipe__unit\">").concat(ing.unit, "</span>\n        ").concat(ing.description, "\n      </div>\n    </li>\n  ");
+    }
+  }]);
+
+  return RecipeView;
+}(_View2.default);
+
+var _default = new RecipeView();
+
+exports.default = _default;
+},{"./View.js":"src/js/views/View.js","../../img/icons.svg":"src/img/icons.svg","fractional":"node_modules/fractional/index.js"}],"src/js/views/searchView.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var SearchView = /*#__PURE__*/function () {
+  function SearchView() {
+    _classCallCheck(this, SearchView);
+
+    _defineProperty(this, "_parentEl", document.querySelector('.search'));
+  }
+
+  _createClass(SearchView, [{
+    key: "getQuery",
+    value: function getQuery() {
+      var query = this._parentEl.querySelector('.search__field').value;
+
+      this._clearInput();
+
+      return query;
+    }
+  }, {
+    key: "_clearInput",
+    value: function _clearInput() {
+      this._parentEl.querySelector('.search__field').value = '';
+    }
+  }, {
+    key: "addHandlerSearch",
+    value: function addHandlerSearch(handler) {
+      this._parentEl.addEventListener('submit', function (e) {
+        e.preventDefault();
+        handler();
+      });
+    }
+  }]);
+
+  return SearchView;
+}();
+
+var _default = new SearchView();
+
+exports.default = _default;
+},{}],"src/js/views/previewView.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _View2 = _interopRequireDefault(require("./View.js"));
+
+var _icons = _interopRequireDefault(require("../../img/icons.svg"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var PreviewView = /*#__PURE__*/function (_View) {
+  _inherits(PreviewView, _View);
+
+  var _super = _createSuper(PreviewView);
+
+  function PreviewView() {
+    var _this;
+
+    _classCallCheck(this, PreviewView);
+
+    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    _this = _super.call.apply(_super, [this].concat(args));
+
+    _defineProperty(_assertThisInitialized(_this), "_parentElement", '');
+
+    return _this;
+  }
+
+  _createClass(PreviewView, [{
+    key: "_generateMarkup",
+    value: function _generateMarkup() {
+      var id = window.location.hash.slice(1);
+      return "\n      <li class=\"preview\">\n        <a class=\"preview__link ".concat(this._data.id === id ? 'preview__link--active' : '', "\" href=\"#").concat(this._data.id, "\">\n          <figure class=\"preview__fig\">\n            <img src=\"").concat(this._data.image, "\" alt=\"").concat(this._data.title, "\" />\n          </figure>\n          <div class=\"preview__data\">\n            <h4 class=\"preview__title\">").concat(this._data.title, "</h4>\n            <p class=\"preview__publisher\">").concat(this._data.publisher, "</p>\n            <div class=\"preview__user-generated ").concat(this._data.key ? '' : 'hidden', "\">\n              <svg>\n              <use href=\"").concat(_icons.default, "#icon-user\"></use>\n              </svg>\n            </div>\n          </div>\n        </a>\n      </li>\n    ");
+    }
+  }]);
+
+  return PreviewView;
+}(_View2.default);
+
+var _default = new PreviewView();
+
+exports.default = _default;
+},{"./View.js":"src/js/views/View.js","../../img/icons.svg":"src/img/icons.svg"}],"src/js/views/resultsView.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _View2 = _interopRequireDefault(require("./View.js"));
+
+var _previewView = _interopRequireDefault(require("./previewView.js"));
+
+var _icons = _interopRequireDefault(require("../../img/icons.svg"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var ResultsView = /*#__PURE__*/function (_View) {
+  _inherits(ResultsView, _View);
+
+  var _super = _createSuper(ResultsView);
+
+  function ResultsView() {
+    var _this;
+
+    _classCallCheck(this, ResultsView);
+
+    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    _this = _super.call.apply(_super, [this].concat(args));
+
+    _defineProperty(_assertThisInitialized(_this), "_parentElement", document.querySelector('.results'));
+
+    _defineProperty(_assertThisInitialized(_this), "_errorMessage", 'No recipes found for your query! Please try again ;)');
+
+    _defineProperty(_assertThisInitialized(_this), "_message", '');
+
+    return _this;
+  }
+
+  _createClass(ResultsView, [{
+    key: "_generateMarkup",
+    value: function _generateMarkup() {
+      return this._data.map(function (result) {
+        return _previewView.default.render(result, false);
+      }).join('');
+    }
+  }]);
+
+  return ResultsView;
+}(_View2.default);
+
+var _default = new ResultsView();
+
+exports.default = _default;
+},{"./View.js":"src/js/views/View.js","./previewView.js":"src/js/views/previewView.js","../../img/icons.svg":"src/img/icons.svg"}],"src/js/views/paginationView.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _View2 = _interopRequireDefault(require("./View.js"));
+
+var _icons = _interopRequireDefault(require("../../img/icons.svg"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var PaginationView = /*#__PURE__*/function (_View) {
+  _inherits(PaginationView, _View);
+
+  var _super = _createSuper(PaginationView);
+
+  function PaginationView() {
+    var _this;
+
+    _classCallCheck(this, PaginationView);
+
+    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    _this = _super.call.apply(_super, [this].concat(args));
+
+    _defineProperty(_assertThisInitialized(_this), "_parentElement", document.querySelector('.pagination'));
+
+    return _this;
+  }
+
+  _createClass(PaginationView, [{
+    key: "addHandlerClick",
+    value: function addHandlerClick(handler) {
+      this._parentElement.addEventListener('click', function (e) {
+        var btn = e.target.closest('.btn--inline');
+        if (!btn) return;
+        var goToPage = +btn.dataset.goto;
+        handler(goToPage);
+      });
+    }
+  }, {
+    key: "_generateMarkup",
+    value: function _generateMarkup() {
+      var curPage = this._data.page;
+      var numPages = Math.ceil(this._data.results.length / this._data.resultsPerPage); // Page 1, and there are other pages
+
+      if (curPage === 1 && numPages > 1) {
+        return "\n        <button data-goto=\"".concat(curPage + 1, "\" class=\"btn--inline pagination__btn--next\">\n          <span>Page ").concat(curPage + 1, "</span>\n          <svg class=\"search__icon\">\n            <use href=\"").concat(_icons.default, "#icon-arrow-right\"></use>\n          </svg>\n        </button>\n      ");
+      } // Last page
+
+
+      if (curPage === numPages && numPages > 1) {
+        return "\n        <button data-goto=\"".concat(curPage - 1, "\" class=\"btn--inline pagination__btn--prev\">\n          <svg class=\"search__icon\">\n            <use href=\"").concat(_icons.default, "#icon-arrow-left\"></use>\n          </svg>\n          <span>Page ").concat(curPage - 1, "</span>\n        </button>\n      ");
+      } // Other page
+
+
+      if (curPage < numPages) {
+        return "\n        <button data-goto=\"".concat(curPage - 1, "\" class=\"btn--inline pagination__btn--prev\">\n          <svg class=\"search__icon\">\n            <use href=\"").concat(_icons.default, "#icon-arrow-left\"></use>\n          </svg>\n          <span>Page ").concat(curPage - 1, "</span>\n        </button>\n        <button data-goto=\"").concat(curPage + 1, "\" class=\"btn--inline pagination__btn--next\">\n          <span>Page ").concat(curPage + 1, "</span>\n          <svg class=\"search__icon\">\n            <use href=\"").concat(_icons.default, "#icon-arrow-right\"></use>\n          </svg>\n        </button>\n      ");
+      } // Page 1, and there are NO other pages
+
+
+      return '';
+    }
+  }]);
+
+  return PaginationView;
+}(_View2.default);
+
+var _default = new PaginationView();
+
+exports.default = _default;
+},{"./View.js":"src/js/views/View.js","../../img/icons.svg":"src/img/icons.svg"}],"src/js/views/bookmarksView.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _View2 = _interopRequireDefault(require("./View.js"));
+
+var _previewView = _interopRequireDefault(require("./previewView.js"));
+
+var _icons = _interopRequireDefault(require("../../img/icons.svg"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var BookmarksView = /*#__PURE__*/function (_View) {
+  _inherits(BookmarksView, _View);
+
+  var _super = _createSuper(BookmarksView);
+
+  function BookmarksView() {
+    var _this;
+
+    _classCallCheck(this, BookmarksView);
+
+    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    _this = _super.call.apply(_super, [this].concat(args));
+
+    _defineProperty(_assertThisInitialized(_this), "_parentElement", document.querySelector('.bookmarks__list'));
+
+    _defineProperty(_assertThisInitialized(_this), "_errorMessage", 'No bookmarks yet. Find a nice recipe and bookmark it ;)');
+
+    _defineProperty(_assertThisInitialized(_this), "_message", '');
+
+    return _this;
+  }
+
+  _createClass(BookmarksView, [{
+    key: "addHandlerRender",
+    value: function addHandlerRender(handler) {
+      window.addEventListener('load', handler);
+    }
+  }, {
+    key: "_generateMarkup",
+    value: function _generateMarkup() {
+      return this._data.map(function (bookmark) {
+        return _previewView.default.render(bookmark, false);
+      }).join('');
+    }
+  }]);
+
+  return BookmarksView;
+}(_View2.default);
+
+var _default = new BookmarksView();
+
+exports.default = _default;
+},{"./View.js":"src/js/views/View.js","./previewView.js":"src/js/views/previewView.js","../../img/icons.svg":"src/img/icons.svg"}],"src/js/views/addRecipeView.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _View2 = _interopRequireDefault(require("./View.js"));
+
+var _icons = _interopRequireDefault(require("../../img/icons.svg"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var AddRecipeView = /*#__PURE__*/function (_View) {
+  _inherits(AddRecipeView, _View);
+
+  var _super = _createSuper(AddRecipeView);
+
+  function AddRecipeView() {
+    var _this;
+
+    _classCallCheck(this, AddRecipeView);
+
+    _this = _super.call(this);
+
+    _defineProperty(_assertThisInitialized(_this), "_parentElement", document.querySelector('.upload'));
+
+    _defineProperty(_assertThisInitialized(_this), "_message", 'Recipe was successfully uploaded :)');
+
+    _defineProperty(_assertThisInitialized(_this), "_window", document.querySelector('.add-recipe-window'));
+
+    _defineProperty(_assertThisInitialized(_this), "_overlay", document.querySelector('.overlay'));
+
+    _defineProperty(_assertThisInitialized(_this), "_btnOpen", document.querySelector('.nav__btn--add-recipe'));
+
+    _defineProperty(_assertThisInitialized(_this), "_btnClose", document.querySelector('.btn--close-modal'));
+
+    _this._addHandlerShowWindow();
+
+    _this._addHandlerHideWindow();
+
+    return _this;
+  }
+
+  _createClass(AddRecipeView, [{
+    key: "toggleWindow",
+    value: function toggleWindow() {
+      this._overlay.classList.toggle('hidden');
+
+      this._window.classList.toggle('hidden');
+    }
+  }, {
+    key: "_addHandlerShowWindow",
+    value: function _addHandlerShowWindow() {
+      this._btnOpen.addEventListener('click', this.toggleWindow.bind(this));
+    }
+  }, {
+    key: "_addHandlerHideWindow",
+    value: function _addHandlerHideWindow() {
+      this._btnClose.addEventListener('click', this.toggleWindow.bind(this));
+
+      this._overlay.addEventListener('click', this.toggleWindow.bind(this));
+    }
+  }, {
+    key: "addHandlerUpload",
+    value: function addHandlerUpload(handler) {
+      this._parentElement.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        var dataArr = _toConsumableArray(new FormData(this));
+
+        var data = Object.fromEntries(dataArr);
+        handler(data);
+      });
+    }
+  }, {
+    key: "_generateMarkup",
+    value: function _generateMarkup() {}
+  }]);
+
+  return AddRecipeView;
+}(_View2.default);
+
+var _default = new AddRecipeView();
+
+exports.default = _default;
+},{"./View.js":"src/js/views/View.js","../../img/icons.svg":"src/img/icons.svg"}],"node_modules/core-js/internals/global.js":[function(require,module,exports) {
 var global = arguments[3];
 var check = function (it) {
   return it && it.Math == Math && it;
@@ -12837,1537 +14372,12 @@ require('../modules/web.url-search-params');
 
 module.exports = require('../internals/path');
 
-},{"../modules/es.symbol":"node_modules/core-js/modules/es.symbol.js","../modules/es.symbol.description":"node_modules/core-js/modules/es.symbol.description.js","../modules/es.symbol.async-iterator":"node_modules/core-js/modules/es.symbol.async-iterator.js","../modules/es.symbol.has-instance":"node_modules/core-js/modules/es.symbol.has-instance.js","../modules/es.symbol.is-concat-spreadable":"node_modules/core-js/modules/es.symbol.is-concat-spreadable.js","../modules/es.symbol.iterator":"node_modules/core-js/modules/es.symbol.iterator.js","../modules/es.symbol.match":"node_modules/core-js/modules/es.symbol.match.js","../modules/es.symbol.match-all":"node_modules/core-js/modules/es.symbol.match-all.js","../modules/es.symbol.replace":"node_modules/core-js/modules/es.symbol.replace.js","../modules/es.symbol.search":"node_modules/core-js/modules/es.symbol.search.js","../modules/es.symbol.species":"node_modules/core-js/modules/es.symbol.species.js","../modules/es.symbol.split":"node_modules/core-js/modules/es.symbol.split.js","../modules/es.symbol.to-primitive":"node_modules/core-js/modules/es.symbol.to-primitive.js","../modules/es.symbol.to-string-tag":"node_modules/core-js/modules/es.symbol.to-string-tag.js","../modules/es.symbol.unscopables":"node_modules/core-js/modules/es.symbol.unscopables.js","../modules/es.aggregate-error":"node_modules/core-js/modules/es.aggregate-error.js","../modules/es.array.concat":"node_modules/core-js/modules/es.array.concat.js","../modules/es.array.copy-within":"node_modules/core-js/modules/es.array.copy-within.js","../modules/es.array.every":"node_modules/core-js/modules/es.array.every.js","../modules/es.array.fill":"node_modules/core-js/modules/es.array.fill.js","../modules/es.array.filter":"node_modules/core-js/modules/es.array.filter.js","../modules/es.array.find":"node_modules/core-js/modules/es.array.find.js","../modules/es.array.find-index":"node_modules/core-js/modules/es.array.find-index.js","../modules/es.array.flat":"node_modules/core-js/modules/es.array.flat.js","../modules/es.array.flat-map":"node_modules/core-js/modules/es.array.flat-map.js","../modules/es.array.for-each":"node_modules/core-js/modules/es.array.for-each.js","../modules/es.array.from":"node_modules/core-js/modules/es.array.from.js","../modules/es.array.includes":"node_modules/core-js/modules/es.array.includes.js","../modules/es.array.index-of":"node_modules/core-js/modules/es.array.index-of.js","../modules/es.array.is-array":"node_modules/core-js/modules/es.array.is-array.js","../modules/es.array.iterator":"node_modules/core-js/modules/es.array.iterator.js","../modules/es.array.join":"node_modules/core-js/modules/es.array.join.js","../modules/es.array.last-index-of":"node_modules/core-js/modules/es.array.last-index-of.js","../modules/es.array.map":"node_modules/core-js/modules/es.array.map.js","../modules/es.array.of":"node_modules/core-js/modules/es.array.of.js","../modules/es.array.reduce":"node_modules/core-js/modules/es.array.reduce.js","../modules/es.array.reduce-right":"node_modules/core-js/modules/es.array.reduce-right.js","../modules/es.array.reverse":"node_modules/core-js/modules/es.array.reverse.js","../modules/es.array.slice":"node_modules/core-js/modules/es.array.slice.js","../modules/es.array.some":"node_modules/core-js/modules/es.array.some.js","../modules/es.array.sort":"node_modules/core-js/modules/es.array.sort.js","../modules/es.array.species":"node_modules/core-js/modules/es.array.species.js","../modules/es.array.splice":"node_modules/core-js/modules/es.array.splice.js","../modules/es.array.unscopables.flat":"node_modules/core-js/modules/es.array.unscopables.flat.js","../modules/es.array.unscopables.flat-map":"node_modules/core-js/modules/es.array.unscopables.flat-map.js","../modules/es.array-buffer.constructor":"node_modules/core-js/modules/es.array-buffer.constructor.js","../modules/es.array-buffer.is-view":"node_modules/core-js/modules/es.array-buffer.is-view.js","../modules/es.array-buffer.slice":"node_modules/core-js/modules/es.array-buffer.slice.js","../modules/es.data-view":"node_modules/core-js/modules/es.data-view.js","../modules/es.date.get-year":"node_modules/core-js/modules/es.date.get-year.js","../modules/es.date.now":"node_modules/core-js/modules/es.date.now.js","../modules/es.date.set-year":"node_modules/core-js/modules/es.date.set-year.js","../modules/es.date.to-gmt-string":"node_modules/core-js/modules/es.date.to-gmt-string.js","../modules/es.date.to-iso-string":"node_modules/core-js/modules/es.date.to-iso-string.js","../modules/es.date.to-json":"node_modules/core-js/modules/es.date.to-json.js","../modules/es.date.to-primitive":"node_modules/core-js/modules/es.date.to-primitive.js","../modules/es.date.to-string":"node_modules/core-js/modules/es.date.to-string.js","../modules/es.escape":"node_modules/core-js/modules/es.escape.js","../modules/es.function.bind":"node_modules/core-js/modules/es.function.bind.js","../modules/es.function.has-instance":"node_modules/core-js/modules/es.function.has-instance.js","../modules/es.function.name":"node_modules/core-js/modules/es.function.name.js","../modules/es.global-this":"node_modules/core-js/modules/es.global-this.js","../modules/es.json.stringify":"node_modules/core-js/modules/es.json.stringify.js","../modules/es.json.to-string-tag":"node_modules/core-js/modules/es.json.to-string-tag.js","../modules/es.map":"node_modules/core-js/modules/es.map.js","../modules/es.math.acosh":"node_modules/core-js/modules/es.math.acosh.js","../modules/es.math.asinh":"node_modules/core-js/modules/es.math.asinh.js","../modules/es.math.atanh":"node_modules/core-js/modules/es.math.atanh.js","../modules/es.math.cbrt":"node_modules/core-js/modules/es.math.cbrt.js","../modules/es.math.clz32":"node_modules/core-js/modules/es.math.clz32.js","../modules/es.math.cosh":"node_modules/core-js/modules/es.math.cosh.js","../modules/es.math.expm1":"node_modules/core-js/modules/es.math.expm1.js","../modules/es.math.fround":"node_modules/core-js/modules/es.math.fround.js","../modules/es.math.hypot":"node_modules/core-js/modules/es.math.hypot.js","../modules/es.math.imul":"node_modules/core-js/modules/es.math.imul.js","../modules/es.math.log10":"node_modules/core-js/modules/es.math.log10.js","../modules/es.math.log1p":"node_modules/core-js/modules/es.math.log1p.js","../modules/es.math.log2":"node_modules/core-js/modules/es.math.log2.js","../modules/es.math.sign":"node_modules/core-js/modules/es.math.sign.js","../modules/es.math.sinh":"node_modules/core-js/modules/es.math.sinh.js","../modules/es.math.tanh":"node_modules/core-js/modules/es.math.tanh.js","../modules/es.math.to-string-tag":"node_modules/core-js/modules/es.math.to-string-tag.js","../modules/es.math.trunc":"node_modules/core-js/modules/es.math.trunc.js","../modules/es.number.constructor":"node_modules/core-js/modules/es.number.constructor.js","../modules/es.number.epsilon":"node_modules/core-js/modules/es.number.epsilon.js","../modules/es.number.is-finite":"node_modules/core-js/modules/es.number.is-finite.js","../modules/es.number.is-integer":"node_modules/core-js/modules/es.number.is-integer.js","../modules/es.number.is-nan":"node_modules/core-js/modules/es.number.is-nan.js","../modules/es.number.is-safe-integer":"node_modules/core-js/modules/es.number.is-safe-integer.js","../modules/es.number.max-safe-integer":"node_modules/core-js/modules/es.number.max-safe-integer.js","../modules/es.number.min-safe-integer":"node_modules/core-js/modules/es.number.min-safe-integer.js","../modules/es.number.parse-float":"node_modules/core-js/modules/es.number.parse-float.js","../modules/es.number.parse-int":"node_modules/core-js/modules/es.number.parse-int.js","../modules/es.number.to-fixed":"node_modules/core-js/modules/es.number.to-fixed.js","../modules/es.number.to-precision":"node_modules/core-js/modules/es.number.to-precision.js","../modules/es.object.assign":"node_modules/core-js/modules/es.object.assign.js","../modules/es.object.create":"node_modules/core-js/modules/es.object.create.js","../modules/es.object.define-getter":"node_modules/core-js/modules/es.object.define-getter.js","../modules/es.object.define-properties":"node_modules/core-js/modules/es.object.define-properties.js","../modules/es.object.define-property":"node_modules/core-js/modules/es.object.define-property.js","../modules/es.object.define-setter":"node_modules/core-js/modules/es.object.define-setter.js","../modules/es.object.entries":"node_modules/core-js/modules/es.object.entries.js","../modules/es.object.freeze":"node_modules/core-js/modules/es.object.freeze.js","../modules/es.object.from-entries":"node_modules/core-js/modules/es.object.from-entries.js","../modules/es.object.get-own-property-descriptor":"node_modules/core-js/modules/es.object.get-own-property-descriptor.js","../modules/es.object.get-own-property-descriptors":"node_modules/core-js/modules/es.object.get-own-property-descriptors.js","../modules/es.object.get-own-property-names":"node_modules/core-js/modules/es.object.get-own-property-names.js","../modules/es.object.get-prototype-of":"node_modules/core-js/modules/es.object.get-prototype-of.js","../modules/es.object.is":"node_modules/core-js/modules/es.object.is.js","../modules/es.object.is-extensible":"node_modules/core-js/modules/es.object.is-extensible.js","../modules/es.object.is-frozen":"node_modules/core-js/modules/es.object.is-frozen.js","../modules/es.object.is-sealed":"node_modules/core-js/modules/es.object.is-sealed.js","../modules/es.object.keys":"node_modules/core-js/modules/es.object.keys.js","../modules/es.object.lookup-getter":"node_modules/core-js/modules/es.object.lookup-getter.js","../modules/es.object.lookup-setter":"node_modules/core-js/modules/es.object.lookup-setter.js","../modules/es.object.prevent-extensions":"node_modules/core-js/modules/es.object.prevent-extensions.js","../modules/es.object.seal":"node_modules/core-js/modules/es.object.seal.js","../modules/es.object.set-prototype-of":"node_modules/core-js/modules/es.object.set-prototype-of.js","../modules/es.object.to-string":"node_modules/core-js/modules/es.object.to-string.js","../modules/es.object.values":"node_modules/core-js/modules/es.object.values.js","../modules/es.parse-float":"node_modules/core-js/modules/es.parse-float.js","../modules/es.parse-int":"node_modules/core-js/modules/es.parse-int.js","../modules/es.promise":"node_modules/core-js/modules/es.promise.js","../modules/es.promise.all-settled":"node_modules/core-js/modules/es.promise.all-settled.js","../modules/es.promise.any":"node_modules/core-js/modules/es.promise.any.js","../modules/es.promise.finally":"node_modules/core-js/modules/es.promise.finally.js","../modules/es.reflect.apply":"node_modules/core-js/modules/es.reflect.apply.js","../modules/es.reflect.construct":"node_modules/core-js/modules/es.reflect.construct.js","../modules/es.reflect.define-property":"node_modules/core-js/modules/es.reflect.define-property.js","../modules/es.reflect.delete-property":"node_modules/core-js/modules/es.reflect.delete-property.js","../modules/es.reflect.get":"node_modules/core-js/modules/es.reflect.get.js","../modules/es.reflect.get-own-property-descriptor":"node_modules/core-js/modules/es.reflect.get-own-property-descriptor.js","../modules/es.reflect.get-prototype-of":"node_modules/core-js/modules/es.reflect.get-prototype-of.js","../modules/es.reflect.has":"node_modules/core-js/modules/es.reflect.has.js","../modules/es.reflect.is-extensible":"node_modules/core-js/modules/es.reflect.is-extensible.js","../modules/es.reflect.own-keys":"node_modules/core-js/modules/es.reflect.own-keys.js","../modules/es.reflect.prevent-extensions":"node_modules/core-js/modules/es.reflect.prevent-extensions.js","../modules/es.reflect.set":"node_modules/core-js/modules/es.reflect.set.js","../modules/es.reflect.set-prototype-of":"node_modules/core-js/modules/es.reflect.set-prototype-of.js","../modules/es.reflect.to-string-tag":"node_modules/core-js/modules/es.reflect.to-string-tag.js","../modules/es.regexp.constructor":"node_modules/core-js/modules/es.regexp.constructor.js","../modules/es.regexp.dot-all":"node_modules/core-js/modules/es.regexp.dot-all.js","../modules/es.regexp.exec":"node_modules/core-js/modules/es.regexp.exec.js","../modules/es.regexp.flags":"node_modules/core-js/modules/es.regexp.flags.js","../modules/es.regexp.sticky":"node_modules/core-js/modules/es.regexp.sticky.js","../modules/es.regexp.test":"node_modules/core-js/modules/es.regexp.test.js","../modules/es.regexp.to-string":"node_modules/core-js/modules/es.regexp.to-string.js","../modules/es.set":"node_modules/core-js/modules/es.set.js","../modules/es.string.code-point-at":"node_modules/core-js/modules/es.string.code-point-at.js","../modules/es.string.ends-with":"node_modules/core-js/modules/es.string.ends-with.js","../modules/es.string.from-code-point":"node_modules/core-js/modules/es.string.from-code-point.js","../modules/es.string.includes":"node_modules/core-js/modules/es.string.includes.js","../modules/es.string.iterator":"node_modules/core-js/modules/es.string.iterator.js","../modules/es.string.match":"node_modules/core-js/modules/es.string.match.js","../modules/es.string.match-all":"node_modules/core-js/modules/es.string.match-all.js","../modules/es.string.pad-end":"node_modules/core-js/modules/es.string.pad-end.js","../modules/es.string.pad-start":"node_modules/core-js/modules/es.string.pad-start.js","../modules/es.string.raw":"node_modules/core-js/modules/es.string.raw.js","../modules/es.string.repeat":"node_modules/core-js/modules/es.string.repeat.js","../modules/es.string.replace":"node_modules/core-js/modules/es.string.replace.js","../modules/es.string.replace-all":"node_modules/core-js/modules/es.string.replace-all.js","../modules/es.string.search":"node_modules/core-js/modules/es.string.search.js","../modules/es.string.split":"node_modules/core-js/modules/es.string.split.js","../modules/es.string.starts-with":"node_modules/core-js/modules/es.string.starts-with.js","../modules/es.string.substr":"node_modules/core-js/modules/es.string.substr.js","../modules/es.string.trim":"node_modules/core-js/modules/es.string.trim.js","../modules/es.string.trim-end":"node_modules/core-js/modules/es.string.trim-end.js","../modules/es.string.trim-start":"node_modules/core-js/modules/es.string.trim-start.js","../modules/es.string.anchor":"node_modules/core-js/modules/es.string.anchor.js","../modules/es.string.big":"node_modules/core-js/modules/es.string.big.js","../modules/es.string.blink":"node_modules/core-js/modules/es.string.blink.js","../modules/es.string.bold":"node_modules/core-js/modules/es.string.bold.js","../modules/es.string.fixed":"node_modules/core-js/modules/es.string.fixed.js","../modules/es.string.fontcolor":"node_modules/core-js/modules/es.string.fontcolor.js","../modules/es.string.fontsize":"node_modules/core-js/modules/es.string.fontsize.js","../modules/es.string.italics":"node_modules/core-js/modules/es.string.italics.js","../modules/es.string.link":"node_modules/core-js/modules/es.string.link.js","../modules/es.string.small":"node_modules/core-js/modules/es.string.small.js","../modules/es.string.strike":"node_modules/core-js/modules/es.string.strike.js","../modules/es.string.sub":"node_modules/core-js/modules/es.string.sub.js","../modules/es.string.sup":"node_modules/core-js/modules/es.string.sup.js","../modules/es.typed-array.float32-array":"node_modules/core-js/modules/es.typed-array.float32-array.js","../modules/es.typed-array.float64-array":"node_modules/core-js/modules/es.typed-array.float64-array.js","../modules/es.typed-array.int8-array":"node_modules/core-js/modules/es.typed-array.int8-array.js","../modules/es.typed-array.int16-array":"node_modules/core-js/modules/es.typed-array.int16-array.js","../modules/es.typed-array.int32-array":"node_modules/core-js/modules/es.typed-array.int32-array.js","../modules/es.typed-array.uint8-array":"node_modules/core-js/modules/es.typed-array.uint8-array.js","../modules/es.typed-array.uint8-clamped-array":"node_modules/core-js/modules/es.typed-array.uint8-clamped-array.js","../modules/es.typed-array.uint16-array":"node_modules/core-js/modules/es.typed-array.uint16-array.js","../modules/es.typed-array.uint32-array":"node_modules/core-js/modules/es.typed-array.uint32-array.js","../modules/es.typed-array.copy-within":"node_modules/core-js/modules/es.typed-array.copy-within.js","../modules/es.typed-array.every":"node_modules/core-js/modules/es.typed-array.every.js","../modules/es.typed-array.fill":"node_modules/core-js/modules/es.typed-array.fill.js","../modules/es.typed-array.filter":"node_modules/core-js/modules/es.typed-array.filter.js","../modules/es.typed-array.find":"node_modules/core-js/modules/es.typed-array.find.js","../modules/es.typed-array.find-index":"node_modules/core-js/modules/es.typed-array.find-index.js","../modules/es.typed-array.for-each":"node_modules/core-js/modules/es.typed-array.for-each.js","../modules/es.typed-array.from":"node_modules/core-js/modules/es.typed-array.from.js","../modules/es.typed-array.includes":"node_modules/core-js/modules/es.typed-array.includes.js","../modules/es.typed-array.index-of":"node_modules/core-js/modules/es.typed-array.index-of.js","../modules/es.typed-array.iterator":"node_modules/core-js/modules/es.typed-array.iterator.js","../modules/es.typed-array.join":"node_modules/core-js/modules/es.typed-array.join.js","../modules/es.typed-array.last-index-of":"node_modules/core-js/modules/es.typed-array.last-index-of.js","../modules/es.typed-array.map":"node_modules/core-js/modules/es.typed-array.map.js","../modules/es.typed-array.of":"node_modules/core-js/modules/es.typed-array.of.js","../modules/es.typed-array.reduce":"node_modules/core-js/modules/es.typed-array.reduce.js","../modules/es.typed-array.reduce-right":"node_modules/core-js/modules/es.typed-array.reduce-right.js","../modules/es.typed-array.reverse":"node_modules/core-js/modules/es.typed-array.reverse.js","../modules/es.typed-array.set":"node_modules/core-js/modules/es.typed-array.set.js","../modules/es.typed-array.slice":"node_modules/core-js/modules/es.typed-array.slice.js","../modules/es.typed-array.some":"node_modules/core-js/modules/es.typed-array.some.js","../modules/es.typed-array.sort":"node_modules/core-js/modules/es.typed-array.sort.js","../modules/es.typed-array.subarray":"node_modules/core-js/modules/es.typed-array.subarray.js","../modules/es.typed-array.to-locale-string":"node_modules/core-js/modules/es.typed-array.to-locale-string.js","../modules/es.typed-array.to-string":"node_modules/core-js/modules/es.typed-array.to-string.js","../modules/es.unescape":"node_modules/core-js/modules/es.unescape.js","../modules/es.weak-map":"node_modules/core-js/modules/es.weak-map.js","../modules/es.weak-set":"node_modules/core-js/modules/es.weak-set.js","../modules/web.dom-collections.for-each":"node_modules/core-js/modules/web.dom-collections.for-each.js","../modules/web.dom-collections.iterator":"node_modules/core-js/modules/web.dom-collections.iterator.js","../modules/web.immediate":"node_modules/core-js/modules/web.immediate.js","../modules/web.queue-microtask":"node_modules/core-js/modules/web.queue-microtask.js","../modules/web.timers":"node_modules/core-js/modules/web.timers.js","../modules/web.url":"node_modules/core-js/modules/web.url.js","../modules/web.url.to-json":"node_modules/core-js/modules/web.url.to-json.js","../modules/web.url-search-params":"node_modules/core-js/modules/web.url-search-params.js","../internals/path":"node_modules/core-js/internals/path.js"}],"src/js/config.js":[function(require,module,exports) {
+},{"../modules/es.symbol":"node_modules/core-js/modules/es.symbol.js","../modules/es.symbol.description":"node_modules/core-js/modules/es.symbol.description.js","../modules/es.symbol.async-iterator":"node_modules/core-js/modules/es.symbol.async-iterator.js","../modules/es.symbol.has-instance":"node_modules/core-js/modules/es.symbol.has-instance.js","../modules/es.symbol.is-concat-spreadable":"node_modules/core-js/modules/es.symbol.is-concat-spreadable.js","../modules/es.symbol.iterator":"node_modules/core-js/modules/es.symbol.iterator.js","../modules/es.symbol.match":"node_modules/core-js/modules/es.symbol.match.js","../modules/es.symbol.match-all":"node_modules/core-js/modules/es.symbol.match-all.js","../modules/es.symbol.replace":"node_modules/core-js/modules/es.symbol.replace.js","../modules/es.symbol.search":"node_modules/core-js/modules/es.symbol.search.js","../modules/es.symbol.species":"node_modules/core-js/modules/es.symbol.species.js","../modules/es.symbol.split":"node_modules/core-js/modules/es.symbol.split.js","../modules/es.symbol.to-primitive":"node_modules/core-js/modules/es.symbol.to-primitive.js","../modules/es.symbol.to-string-tag":"node_modules/core-js/modules/es.symbol.to-string-tag.js","../modules/es.symbol.unscopables":"node_modules/core-js/modules/es.symbol.unscopables.js","../modules/es.aggregate-error":"node_modules/core-js/modules/es.aggregate-error.js","../modules/es.array.concat":"node_modules/core-js/modules/es.array.concat.js","../modules/es.array.copy-within":"node_modules/core-js/modules/es.array.copy-within.js","../modules/es.array.every":"node_modules/core-js/modules/es.array.every.js","../modules/es.array.fill":"node_modules/core-js/modules/es.array.fill.js","../modules/es.array.filter":"node_modules/core-js/modules/es.array.filter.js","../modules/es.array.find":"node_modules/core-js/modules/es.array.find.js","../modules/es.array.find-index":"node_modules/core-js/modules/es.array.find-index.js","../modules/es.array.flat":"node_modules/core-js/modules/es.array.flat.js","../modules/es.array.flat-map":"node_modules/core-js/modules/es.array.flat-map.js","../modules/es.array.for-each":"node_modules/core-js/modules/es.array.for-each.js","../modules/es.array.from":"node_modules/core-js/modules/es.array.from.js","../modules/es.array.includes":"node_modules/core-js/modules/es.array.includes.js","../modules/es.array.index-of":"node_modules/core-js/modules/es.array.index-of.js","../modules/es.array.is-array":"node_modules/core-js/modules/es.array.is-array.js","../modules/es.array.iterator":"node_modules/core-js/modules/es.array.iterator.js","../modules/es.array.join":"node_modules/core-js/modules/es.array.join.js","../modules/es.array.last-index-of":"node_modules/core-js/modules/es.array.last-index-of.js","../modules/es.array.map":"node_modules/core-js/modules/es.array.map.js","../modules/es.array.of":"node_modules/core-js/modules/es.array.of.js","../modules/es.array.reduce":"node_modules/core-js/modules/es.array.reduce.js","../modules/es.array.reduce-right":"node_modules/core-js/modules/es.array.reduce-right.js","../modules/es.array.reverse":"node_modules/core-js/modules/es.array.reverse.js","../modules/es.array.slice":"node_modules/core-js/modules/es.array.slice.js","../modules/es.array.some":"node_modules/core-js/modules/es.array.some.js","../modules/es.array.sort":"node_modules/core-js/modules/es.array.sort.js","../modules/es.array.species":"node_modules/core-js/modules/es.array.species.js","../modules/es.array.splice":"node_modules/core-js/modules/es.array.splice.js","../modules/es.array.unscopables.flat":"node_modules/core-js/modules/es.array.unscopables.flat.js","../modules/es.array.unscopables.flat-map":"node_modules/core-js/modules/es.array.unscopables.flat-map.js","../modules/es.array-buffer.constructor":"node_modules/core-js/modules/es.array-buffer.constructor.js","../modules/es.array-buffer.is-view":"node_modules/core-js/modules/es.array-buffer.is-view.js","../modules/es.array-buffer.slice":"node_modules/core-js/modules/es.array-buffer.slice.js","../modules/es.data-view":"node_modules/core-js/modules/es.data-view.js","../modules/es.date.get-year":"node_modules/core-js/modules/es.date.get-year.js","../modules/es.date.now":"node_modules/core-js/modules/es.date.now.js","../modules/es.date.set-year":"node_modules/core-js/modules/es.date.set-year.js","../modules/es.date.to-gmt-string":"node_modules/core-js/modules/es.date.to-gmt-string.js","../modules/es.date.to-iso-string":"node_modules/core-js/modules/es.date.to-iso-string.js","../modules/es.date.to-json":"node_modules/core-js/modules/es.date.to-json.js","../modules/es.date.to-primitive":"node_modules/core-js/modules/es.date.to-primitive.js","../modules/es.date.to-string":"node_modules/core-js/modules/es.date.to-string.js","../modules/es.escape":"node_modules/core-js/modules/es.escape.js","../modules/es.function.bind":"node_modules/core-js/modules/es.function.bind.js","../modules/es.function.has-instance":"node_modules/core-js/modules/es.function.has-instance.js","../modules/es.function.name":"node_modules/core-js/modules/es.function.name.js","../modules/es.global-this":"node_modules/core-js/modules/es.global-this.js","../modules/es.json.stringify":"node_modules/core-js/modules/es.json.stringify.js","../modules/es.json.to-string-tag":"node_modules/core-js/modules/es.json.to-string-tag.js","../modules/es.map":"node_modules/core-js/modules/es.map.js","../modules/es.math.acosh":"node_modules/core-js/modules/es.math.acosh.js","../modules/es.math.asinh":"node_modules/core-js/modules/es.math.asinh.js","../modules/es.math.atanh":"node_modules/core-js/modules/es.math.atanh.js","../modules/es.math.cbrt":"node_modules/core-js/modules/es.math.cbrt.js","../modules/es.math.clz32":"node_modules/core-js/modules/es.math.clz32.js","../modules/es.math.cosh":"node_modules/core-js/modules/es.math.cosh.js","../modules/es.math.expm1":"node_modules/core-js/modules/es.math.expm1.js","../modules/es.math.fround":"node_modules/core-js/modules/es.math.fround.js","../modules/es.math.hypot":"node_modules/core-js/modules/es.math.hypot.js","../modules/es.math.imul":"node_modules/core-js/modules/es.math.imul.js","../modules/es.math.log10":"node_modules/core-js/modules/es.math.log10.js","../modules/es.math.log1p":"node_modules/core-js/modules/es.math.log1p.js","../modules/es.math.log2":"node_modules/core-js/modules/es.math.log2.js","../modules/es.math.sign":"node_modules/core-js/modules/es.math.sign.js","../modules/es.math.sinh":"node_modules/core-js/modules/es.math.sinh.js","../modules/es.math.tanh":"node_modules/core-js/modules/es.math.tanh.js","../modules/es.math.to-string-tag":"node_modules/core-js/modules/es.math.to-string-tag.js","../modules/es.math.trunc":"node_modules/core-js/modules/es.math.trunc.js","../modules/es.number.constructor":"node_modules/core-js/modules/es.number.constructor.js","../modules/es.number.epsilon":"node_modules/core-js/modules/es.number.epsilon.js","../modules/es.number.is-finite":"node_modules/core-js/modules/es.number.is-finite.js","../modules/es.number.is-integer":"node_modules/core-js/modules/es.number.is-integer.js","../modules/es.number.is-nan":"node_modules/core-js/modules/es.number.is-nan.js","../modules/es.number.is-safe-integer":"node_modules/core-js/modules/es.number.is-safe-integer.js","../modules/es.number.max-safe-integer":"node_modules/core-js/modules/es.number.max-safe-integer.js","../modules/es.number.min-safe-integer":"node_modules/core-js/modules/es.number.min-safe-integer.js","../modules/es.number.parse-float":"node_modules/core-js/modules/es.number.parse-float.js","../modules/es.number.parse-int":"node_modules/core-js/modules/es.number.parse-int.js","../modules/es.number.to-fixed":"node_modules/core-js/modules/es.number.to-fixed.js","../modules/es.number.to-precision":"node_modules/core-js/modules/es.number.to-precision.js","../modules/es.object.assign":"node_modules/core-js/modules/es.object.assign.js","../modules/es.object.create":"node_modules/core-js/modules/es.object.create.js","../modules/es.object.define-getter":"node_modules/core-js/modules/es.object.define-getter.js","../modules/es.object.define-properties":"node_modules/core-js/modules/es.object.define-properties.js","../modules/es.object.define-property":"node_modules/core-js/modules/es.object.define-property.js","../modules/es.object.define-setter":"node_modules/core-js/modules/es.object.define-setter.js","../modules/es.object.entries":"node_modules/core-js/modules/es.object.entries.js","../modules/es.object.freeze":"node_modules/core-js/modules/es.object.freeze.js","../modules/es.object.from-entries":"node_modules/core-js/modules/es.object.from-entries.js","../modules/es.object.get-own-property-descriptor":"node_modules/core-js/modules/es.object.get-own-property-descriptor.js","../modules/es.object.get-own-property-descriptors":"node_modules/core-js/modules/es.object.get-own-property-descriptors.js","../modules/es.object.get-own-property-names":"node_modules/core-js/modules/es.object.get-own-property-names.js","../modules/es.object.get-prototype-of":"node_modules/core-js/modules/es.object.get-prototype-of.js","../modules/es.object.is":"node_modules/core-js/modules/es.object.is.js","../modules/es.object.is-extensible":"node_modules/core-js/modules/es.object.is-extensible.js","../modules/es.object.is-frozen":"node_modules/core-js/modules/es.object.is-frozen.js","../modules/es.object.is-sealed":"node_modules/core-js/modules/es.object.is-sealed.js","../modules/es.object.keys":"node_modules/core-js/modules/es.object.keys.js","../modules/es.object.lookup-getter":"node_modules/core-js/modules/es.object.lookup-getter.js","../modules/es.object.lookup-setter":"node_modules/core-js/modules/es.object.lookup-setter.js","../modules/es.object.prevent-extensions":"node_modules/core-js/modules/es.object.prevent-extensions.js","../modules/es.object.seal":"node_modules/core-js/modules/es.object.seal.js","../modules/es.object.set-prototype-of":"node_modules/core-js/modules/es.object.set-prototype-of.js","../modules/es.object.to-string":"node_modules/core-js/modules/es.object.to-string.js","../modules/es.object.values":"node_modules/core-js/modules/es.object.values.js","../modules/es.parse-float":"node_modules/core-js/modules/es.parse-float.js","../modules/es.parse-int":"node_modules/core-js/modules/es.parse-int.js","../modules/es.promise":"node_modules/core-js/modules/es.promise.js","../modules/es.promise.all-settled":"node_modules/core-js/modules/es.promise.all-settled.js","../modules/es.promise.any":"node_modules/core-js/modules/es.promise.any.js","../modules/es.promise.finally":"node_modules/core-js/modules/es.promise.finally.js","../modules/es.reflect.apply":"node_modules/core-js/modules/es.reflect.apply.js","../modules/es.reflect.construct":"node_modules/core-js/modules/es.reflect.construct.js","../modules/es.reflect.define-property":"node_modules/core-js/modules/es.reflect.define-property.js","../modules/es.reflect.delete-property":"node_modules/core-js/modules/es.reflect.delete-property.js","../modules/es.reflect.get":"node_modules/core-js/modules/es.reflect.get.js","../modules/es.reflect.get-own-property-descriptor":"node_modules/core-js/modules/es.reflect.get-own-property-descriptor.js","../modules/es.reflect.get-prototype-of":"node_modules/core-js/modules/es.reflect.get-prototype-of.js","../modules/es.reflect.has":"node_modules/core-js/modules/es.reflect.has.js","../modules/es.reflect.is-extensible":"node_modules/core-js/modules/es.reflect.is-extensible.js","../modules/es.reflect.own-keys":"node_modules/core-js/modules/es.reflect.own-keys.js","../modules/es.reflect.prevent-extensions":"node_modules/core-js/modules/es.reflect.prevent-extensions.js","../modules/es.reflect.set":"node_modules/core-js/modules/es.reflect.set.js","../modules/es.reflect.set-prototype-of":"node_modules/core-js/modules/es.reflect.set-prototype-of.js","../modules/es.reflect.to-string-tag":"node_modules/core-js/modules/es.reflect.to-string-tag.js","../modules/es.regexp.constructor":"node_modules/core-js/modules/es.regexp.constructor.js","../modules/es.regexp.dot-all":"node_modules/core-js/modules/es.regexp.dot-all.js","../modules/es.regexp.exec":"node_modules/core-js/modules/es.regexp.exec.js","../modules/es.regexp.flags":"node_modules/core-js/modules/es.regexp.flags.js","../modules/es.regexp.sticky":"node_modules/core-js/modules/es.regexp.sticky.js","../modules/es.regexp.test":"node_modules/core-js/modules/es.regexp.test.js","../modules/es.regexp.to-string":"node_modules/core-js/modules/es.regexp.to-string.js","../modules/es.set":"node_modules/core-js/modules/es.set.js","../modules/es.string.code-point-at":"node_modules/core-js/modules/es.string.code-point-at.js","../modules/es.string.ends-with":"node_modules/core-js/modules/es.string.ends-with.js","../modules/es.string.from-code-point":"node_modules/core-js/modules/es.string.from-code-point.js","../modules/es.string.includes":"node_modules/core-js/modules/es.string.includes.js","../modules/es.string.iterator":"node_modules/core-js/modules/es.string.iterator.js","../modules/es.string.match":"node_modules/core-js/modules/es.string.match.js","../modules/es.string.match-all":"node_modules/core-js/modules/es.string.match-all.js","../modules/es.string.pad-end":"node_modules/core-js/modules/es.string.pad-end.js","../modules/es.string.pad-start":"node_modules/core-js/modules/es.string.pad-start.js","../modules/es.string.raw":"node_modules/core-js/modules/es.string.raw.js","../modules/es.string.repeat":"node_modules/core-js/modules/es.string.repeat.js","../modules/es.string.replace":"node_modules/core-js/modules/es.string.replace.js","../modules/es.string.replace-all":"node_modules/core-js/modules/es.string.replace-all.js","../modules/es.string.search":"node_modules/core-js/modules/es.string.search.js","../modules/es.string.split":"node_modules/core-js/modules/es.string.split.js","../modules/es.string.starts-with":"node_modules/core-js/modules/es.string.starts-with.js","../modules/es.string.substr":"node_modules/core-js/modules/es.string.substr.js","../modules/es.string.trim":"node_modules/core-js/modules/es.string.trim.js","../modules/es.string.trim-end":"node_modules/core-js/modules/es.string.trim-end.js","../modules/es.string.trim-start":"node_modules/core-js/modules/es.string.trim-start.js","../modules/es.string.anchor":"node_modules/core-js/modules/es.string.anchor.js","../modules/es.string.big":"node_modules/core-js/modules/es.string.big.js","../modules/es.string.blink":"node_modules/core-js/modules/es.string.blink.js","../modules/es.string.bold":"node_modules/core-js/modules/es.string.bold.js","../modules/es.string.fixed":"node_modules/core-js/modules/es.string.fixed.js","../modules/es.string.fontcolor":"node_modules/core-js/modules/es.string.fontcolor.js","../modules/es.string.fontsize":"node_modules/core-js/modules/es.string.fontsize.js","../modules/es.string.italics":"node_modules/core-js/modules/es.string.italics.js","../modules/es.string.link":"node_modules/core-js/modules/es.string.link.js","../modules/es.string.small":"node_modules/core-js/modules/es.string.small.js","../modules/es.string.strike":"node_modules/core-js/modules/es.string.strike.js","../modules/es.string.sub":"node_modules/core-js/modules/es.string.sub.js","../modules/es.string.sup":"node_modules/core-js/modules/es.string.sup.js","../modules/es.typed-array.float32-array":"node_modules/core-js/modules/es.typed-array.float32-array.js","../modules/es.typed-array.float64-array":"node_modules/core-js/modules/es.typed-array.float64-array.js","../modules/es.typed-array.int8-array":"node_modules/core-js/modules/es.typed-array.int8-array.js","../modules/es.typed-array.int16-array":"node_modules/core-js/modules/es.typed-array.int16-array.js","../modules/es.typed-array.int32-array":"node_modules/core-js/modules/es.typed-array.int32-array.js","../modules/es.typed-array.uint8-array":"node_modules/core-js/modules/es.typed-array.uint8-array.js","../modules/es.typed-array.uint8-clamped-array":"node_modules/core-js/modules/es.typed-array.uint8-clamped-array.js","../modules/es.typed-array.uint16-array":"node_modules/core-js/modules/es.typed-array.uint16-array.js","../modules/es.typed-array.uint32-array":"node_modules/core-js/modules/es.typed-array.uint32-array.js","../modules/es.typed-array.copy-within":"node_modules/core-js/modules/es.typed-array.copy-within.js","../modules/es.typed-array.every":"node_modules/core-js/modules/es.typed-array.every.js","../modules/es.typed-array.fill":"node_modules/core-js/modules/es.typed-array.fill.js","../modules/es.typed-array.filter":"node_modules/core-js/modules/es.typed-array.filter.js","../modules/es.typed-array.find":"node_modules/core-js/modules/es.typed-array.find.js","../modules/es.typed-array.find-index":"node_modules/core-js/modules/es.typed-array.find-index.js","../modules/es.typed-array.for-each":"node_modules/core-js/modules/es.typed-array.for-each.js","../modules/es.typed-array.from":"node_modules/core-js/modules/es.typed-array.from.js","../modules/es.typed-array.includes":"node_modules/core-js/modules/es.typed-array.includes.js","../modules/es.typed-array.index-of":"node_modules/core-js/modules/es.typed-array.index-of.js","../modules/es.typed-array.iterator":"node_modules/core-js/modules/es.typed-array.iterator.js","../modules/es.typed-array.join":"node_modules/core-js/modules/es.typed-array.join.js","../modules/es.typed-array.last-index-of":"node_modules/core-js/modules/es.typed-array.last-index-of.js","../modules/es.typed-array.map":"node_modules/core-js/modules/es.typed-array.map.js","../modules/es.typed-array.of":"node_modules/core-js/modules/es.typed-array.of.js","../modules/es.typed-array.reduce":"node_modules/core-js/modules/es.typed-array.reduce.js","../modules/es.typed-array.reduce-right":"node_modules/core-js/modules/es.typed-array.reduce-right.js","../modules/es.typed-array.reverse":"node_modules/core-js/modules/es.typed-array.reverse.js","../modules/es.typed-array.set":"node_modules/core-js/modules/es.typed-array.set.js","../modules/es.typed-array.slice":"node_modules/core-js/modules/es.typed-array.slice.js","../modules/es.typed-array.some":"node_modules/core-js/modules/es.typed-array.some.js","../modules/es.typed-array.sort":"node_modules/core-js/modules/es.typed-array.sort.js","../modules/es.typed-array.subarray":"node_modules/core-js/modules/es.typed-array.subarray.js","../modules/es.typed-array.to-locale-string":"node_modules/core-js/modules/es.typed-array.to-locale-string.js","../modules/es.typed-array.to-string":"node_modules/core-js/modules/es.typed-array.to-string.js","../modules/es.unescape":"node_modules/core-js/modules/es.unescape.js","../modules/es.weak-map":"node_modules/core-js/modules/es.weak-map.js","../modules/es.weak-set":"node_modules/core-js/modules/es.weak-set.js","../modules/web.dom-collections.for-each":"node_modules/core-js/modules/web.dom-collections.for-each.js","../modules/web.dom-collections.iterator":"node_modules/core-js/modules/web.dom-collections.iterator.js","../modules/web.immediate":"node_modules/core-js/modules/web.immediate.js","../modules/web.queue-microtask":"node_modules/core-js/modules/web.queue-microtask.js","../modules/web.timers":"node_modules/core-js/modules/web.timers.js","../modules/web.url":"node_modules/core-js/modules/web.url.js","../modules/web.url.to-json":"node_modules/core-js/modules/web.url.to-json.js","../modules/web.url-search-params":"node_modules/core-js/modules/web.url-search-params.js","../internals/path":"node_modules/core-js/internals/path.js"}],"src/js/controller.js":[function(require,module,exports) {
 "use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.KEY = exports.RES_PER_PAGE = exports.TIMEOUT_SEC = exports.API_URL = void 0;
-var API_URL = "https://forkify-api.herokuapp.com/api/v2/recipes/";
-exports.API_URL = API_URL;
-var TIMEOUT_SEC = 10;
-exports.TIMEOUT_SEC = TIMEOUT_SEC;
-var RES_PER_PAGE = 10;
-exports.RES_PER_PAGE = RES_PER_PAGE;
-var KEY = "f595a8df-d62a-46b4-912c-5ef2ed1d12d8";
-exports.KEY = KEY;
-},{}],"src/js/helper.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.sendJSON = exports.getJSON = void 0;
-
-var _regeneratorRuntime = require("regenerator-runtime");
-
-var _config = require("./config.js");
-
-function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
-
-function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
-
-var timeout = function timeout(s) {
-  return new Promise(function (_, reject) {
-    setTimeout(function () {
-      reject(new Error("Request took too long! Timeout after ".concat(s, " second")));
-    }, s * 1000);
-  });
-};
-
-var getJSON = /*#__PURE__*/function () {
-  var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(url) {
-    var fetchPro, res, data;
-    return regeneratorRuntime.wrap(function _callee$(_context) {
-      while (1) {
-        switch (_context.prev = _context.next) {
-          case 0:
-            _context.prev = 0;
-            fetchPro = fetch(url);
-            _context.next = 4;
-            return Promise.race([fetchPro, timeout(_config.TIMEOUT_SEC)]);
-
-          case 4:
-            res = _context.sent;
-            _context.next = 7;
-            return res.json();
-
-          case 7:
-            data = _context.sent;
-
-            if (res.ok) {
-              _context.next = 10;
-              break;
-            }
-
-            throw new Error("".concat(data.message, " (").concat(res.status, ")"));
-
-          case 10:
-            return _context.abrupt("return", data);
-
-          case 13:
-            _context.prev = 13;
-            _context.t0 = _context["catch"](0);
-            throw _context.t0;
-
-          case 16:
-          case "end":
-            return _context.stop();
-        }
-      }
-    }, _callee, null, [[0, 13]]);
-  }));
-
-  return function getJSON(_x) {
-    return _ref.apply(this, arguments);
-  };
-}();
-
-exports.getJSON = getJSON;
-
-var sendJSON = /*#__PURE__*/function () {
-  var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(url, uploadData) {
-    var fetchPro, res, data;
-    return regeneratorRuntime.wrap(function _callee2$(_context2) {
-      while (1) {
-        switch (_context2.prev = _context2.next) {
-          case 0:
-            _context2.prev = 0;
-            fetchPro = fetch(url, {
-              method: "POST",
-              headers: {
-                "Content-type": "application/json"
-              },
-              body: JSON.stringify(uploadData)
-            });
-            _context2.next = 4;
-            return Promise.race([fetchPro, timeout(_config.TIMEOUT_SEC)]);
-
-          case 4:
-            res = _context2.sent;
-            _context2.next = 7;
-            return res.json();
-
-          case 7:
-            data = _context2.sent;
-
-            if (res.ok) {
-              _context2.next = 10;
-              break;
-            }
-
-            throw new Error("".concat(data.message, " (").concat(res.status, ")"));
-
-          case 10:
-            return _context2.abrupt("return", data);
-
-          case 13:
-            _context2.prev = 13;
-            _context2.t0 = _context2["catch"](0);
-            throw _context2.t0;
-
-          case 16:
-          case "end":
-            return _context2.stop();
-        }
-      }
-    }, _callee2, null, [[0, 13]]);
-  }));
-
-  return function sendJSON(_x2, _x3) {
-    return _ref2.apply(this, arguments);
-  };
-}();
-
-exports.sendJSON = sendJSON;
-},{"regenerator-runtime":"node_modules/regenerator-runtime/runtime.js","./config.js":"src/js/config.js"}],"src/js/model.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.uploadRecipe = exports.deleteBookmark = exports.addBookmark = exports.updateServings = exports.getSearchResultsPage = exports.loadSearchResults = exports.loadRecipe = exports.state = void 0;
-
-var _regeneratorRuntime = require("regenerator-runtime");
-
-var _config = require("./config.js");
-
-var _helper = require("./helper.js");
-
-function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
-
-function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-
-function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
-
-function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
-function _iterableToArrayLimit(arr, i) { var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]; if (_i == null) return; var _arr = []; var _n = true; var _d = false; var _s, _e; try { for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
-
-function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
-
-function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
-
-function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
-
-var state = {
-  recipe: {},
-  search: {
-    query: "",
-    results: [],
-    resultsPerPage: _config.RES_PER_PAGE,
-    page: 1
-  },
-  bookmarks: []
-};
-exports.state = state;
-
-var loadRecipe = /*#__PURE__*/function () {
-  var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(id) {
-    var data, recipe;
-    return regeneratorRuntime.wrap(function _callee$(_context) {
-      while (1) {
-        switch (_context.prev = _context.next) {
-          case 0:
-            _context.prev = 0;
-            _context.next = 3;
-            return (0, _helper.getJSON)("".concat(_config.API_URL).concat(id));
-
-          case 3:
-            data = _context.sent;
-            recipe = data.data.recipe;
-            state.recipe = {
-              id: recipe.id,
-              title: recipe.title,
-              publisher: recipe.publisher,
-              sourceUrl: recipe.source_url,
-              image: recipe.image_url,
-              servings: recipe.servings,
-              cookingTime: recipe.cooking_time,
-              ingredients: recipe.ingredients
-            };
-
-            if (state.bookmarks.some(function (bookmard) {
-              return bookmard.id === id;
-            })) {
-              state.recipe.bookmarked = true;
-            } else {
-              state.recipe.bookmarked = false;
-            }
-
-            console.log(state.recipe);
-            _context.next = 14;
-            break;
-
-          case 10:
-            _context.prev = 10;
-            _context.t0 = _context["catch"](0);
-            console.log(_context.t0);
-            throw _context.t0;
-
-          case 14:
-          case "end":
-            return _context.stop();
-        }
-      }
-    }, _callee, null, [[0, 10]]);
-  }));
-
-  return function loadRecipe(_x) {
-    return _ref.apply(this, arguments);
-  };
-}();
-
-exports.loadRecipe = loadRecipe;
-
-var loadSearchResults = /*#__PURE__*/function () {
-  var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(query) {
-    var data;
-    return regeneratorRuntime.wrap(function _callee2$(_context2) {
-      while (1) {
-        switch (_context2.prev = _context2.next) {
-          case 0:
-            _context2.prev = 0;
-            state.search.query = query;
-            _context2.next = 4;
-            return (0, _helper.getJSON)("".concat(_config.API_URL, "?search=").concat(query));
-
-          case 4:
-            data = _context2.sent;
-            console.log(data);
-            state.search.results = data.data.recipes.map(function (rec) {
-              return {
-                id: rec.id,
-                title: rec.title,
-                publisher: rec.publisher,
-                image: rec.image_url
-              };
-            });
-            state.search.page = 1;
-            console.log(state.search.results);
-            _context2.next = 15;
-            break;
-
-          case 11:
-            _context2.prev = 11;
-            _context2.t0 = _context2["catch"](0);
-            console.log(_context2.t0);
-            throw _context2.t0;
-
-          case 15:
-          case "end":
-            return _context2.stop();
-        }
-      }
-    }, _callee2, null, [[0, 11]]);
-  }));
-
-  return function loadSearchResults(_x2) {
-    return _ref2.apply(this, arguments);
-  };
-}();
-
-exports.loadSearchResults = loadSearchResults;
-
-var getSearchResultsPage = function getSearchResultsPage() {
-  var page = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : state.search.page;
-  state.search.page = page;
-  var start = (page - 1) * state.search.resultsPerPage;
-  var end = page * state.search.resultsPerPage;
-  return state.search.results.slice(start, end);
-};
-
-exports.getSearchResultsPage = getSearchResultsPage;
-
-var updateServings = function updateServings(newServings) {
-  state.recipe.ingredients.forEach(function (ing) {
-    ing.quantity = ing.quantity * newServings / state.recipe.servings;
-  });
-  state.recipe.servings = newServings;
-};
-
-exports.updateServings = updateServings;
-
-var persistBookmarks = function persistBookmarks() {
-  localStorage.setItem("bookmarks", JSON.stringify(state.bookmarks));
-};
-
-var addBookmark = function addBookmark(recipe) {
-  //Add bookmark
-  state.bookmarks.push(recipe); //Mark current recipe as bookmark
-
-  if (recipe.id === state.recipe.id) state.recipe.bookmarked = true;
-  persistBookmarks();
-};
-
-exports.addBookmark = addBookmark;
-
-var deleteBookmark = function deleteBookmark(id) {
-  // Delete bookmarked
-  var index = state.bookmarks.findIndex(function (el) {
-    return el.id === id;
-  });
-  state.bookmarks.splice(index, 1); // Mark current recipe as NOT bookmarked
-
-  if (id === state.recipe.id) state.recipe.bookmarked = false;
-  persistBookmarks();
-};
-
-exports.deleteBookmark = deleteBookmark;
-
-var init = function init() {
-  var storage = localStorage.getItem("bookmarks");
-  if (storage) state.bookmarks = JSON.parse(storage);
-};
-
-init();
-
-var clearBookmarks = function clearBookmarks() {
-  localStorage.clear("bookmarks");
-}; // clearBookmarks();
-
-
-var uploadRecipe = /*#__PURE__*/function () {
-  var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(newRecipe) {
-    var ingredients, recipe, data;
-    return regeneratorRuntime.wrap(function _callee3$(_context3) {
-      while (1) {
-        switch (_context3.prev = _context3.next) {
-          case 0:
-            _context3.prev = 0;
-            ingredients = Object.entries(newRecipe).filter(function (entry) {
-              return entry[0].startsWith("ingredient") && entry[1] !== "";
-            }).map(function (ing) {
-              var ingArr = ing[1].replaceAll(" ", "").split(",");
-              if (ingArr.length !== 3) throw new Error("Wrong ingredient format ! Please use the correct format 😉");
-
-              var _ingArr = _slicedToArray(ingArr, 3),
-                  quantity = _ingArr[0],
-                  unit = _ingArr[1],
-                  description = _ingArr[2];
-
-              return {
-                quantity: quantity ? +quantity : null,
-                unit: unit,
-                description: description
-              };
-            });
-            recipe = {
-              title: newRecipe.title,
-              source_url: newRecipe.sourceUrl,
-              image_url: newRecipe.image,
-              publisher: newRecipe.publisher,
-              cooking_time: +newRecipe.cookingTime,
-              servings: +newRecipe.servings,
-              ingredients: ingredients
-            };
-            console.log(ingredients);
-            _context3.next = 6;
-            return (0, _helper.sendJSON)("".concat(_config.API_URL, "?search=").concat(recipe.title, "&key=").concat(_config.KEY), recipe);
-
-          case 6:
-            data = _context3.sent;
-            console.log(data);
-            _context3.next = 13;
-            break;
-
-          case 10:
-            _context3.prev = 10;
-            _context3.t0 = _context3["catch"](0);
-            throw _context3.t0;
-
-          case 13:
-          case "end":
-            return _context3.stop();
-        }
-      }
-    }, _callee3, null, [[0, 10]]);
-  }));
-
-  return function uploadRecipe(_x3) {
-    return _ref3.apply(this, arguments);
-  };
-}();
-
-exports.uploadRecipe = uploadRecipe;
-},{"regenerator-runtime":"node_modules/regenerator-runtime/runtime.js","./config.js":"src/js/config.js","./helper.js":"src/js/helper.js"}],"src/img/icons.svg":[function(require,module,exports) {
-module.exports = "/icons.ae3c38d5.svg";
-},{}],"src/js/views/View.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-var _icons = _interopRequireDefault(require("../../img/icons.svg"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-var View = /*#__PURE__*/function () {
-  function View() {
-    _classCallCheck(this, View);
-
-    _defineProperty(this, "_data", void 0);
-  }
-
-  _createClass(View, [{
-    key: "render",
-    value: function render(data) {
-      var _render = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-
-      if (!data || Array.isArray(data) && data.length === 0) return this.renderError();
-      this._data = data;
-
-      var markup = this._generateMarkup();
-
-      if (!_render) return markup;
-
-      this._clear();
-
-      this._parentElement.insertAdjacentHTML("afterbegin", markup);
-    }
-  }, {
-    key: "update",
-    value: function update(data) {
-      this._data = data;
-
-      var newMarkup = this._generateMarkup();
-
-      var newDom = document.createRange().createContextualFragment(newMarkup);
-      var newElements = Array.from(newDom.querySelectorAll("*"));
-      var curElements = Array.from(this._parentElement.querySelectorAll("*"));
-      newElements.forEach(function (newEl, i) {
-        var _newEl$firstChild;
-
-        var curEl = curElements[i]; //Upddates changed TEXT
-
-        if (!newEl.isEqualNode(curEl) && ((_newEl$firstChild = newEl.firstChild) === null || _newEl$firstChild === void 0 ? void 0 : _newEl$firstChild.nodeValue.trim()) !== "") {
-          curEl.textContent = newEl.textContent;
-        } //Updates changed Attributes
-
-
-        if (!newEl.isEqualNode(curEl)) {
-          Array.from(newEl.attributes).forEach(function (attr) {
-            return curEl.setAttribute(attr.name, attr.value);
-          });
-        }
-      });
-    }
-  }, {
-    key: "_clear",
-    value: function _clear() {
-      this._parentElement.innerHTML = "";
-    }
-  }, {
-    key: "renderSpinner",
-    value: function renderSpinner() {
-      var markup = "\n    <div class=\"spinner\">\n      <svg>\n        <use href=\"".concat(_icons.default, "#icon-loader\"></use>\n      </svg>\n    </div>\n    ");
-
-      this._clear();
-
-      this._parentElement.insertAdjacentHTML("afterbegin", markup);
-    }
-  }, {
-    key: "renderError",
-    value: function renderError() {
-      var message = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this._errorMessage;
-      var markup = "\n    <div class=\"error\">\n      <div>\n        <svg>\n          <use href=\"".concat(_icons.default, "#icon-alert-triangle\"></use>\n        </svg>\n      </div>\n      <p>").concat(message, "</p>\n    </div>\n    ");
-
-      this._clear();
-
-      this._parentElement.insertAdjacentHTML("afterbegin", markup);
-    }
-  }, {
-    key: "renderMessage",
-    value: function renderMessage() {
-      var message = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this._message;
-      var markup = "\n    <div class=\"message\">\n      <div>\n        <svg>\n          <use href=\"".concat(_icons.default, "#icon-smile\"></use>\n        </svg>\n      </div>\n      <p>").concat(message, "</p>\n    </div>\n    ");
-
-      this._clear();
-
-      this._parentElement.insertAdjacentHTML("afterbegin", markup);
-    }
-  }]);
-
-  return View;
-}();
-
-exports.default = View;
-},{"../../img/icons.svg":"src/img/icons.svg"}],"node_modules/fractional/index.js":[function(require,module,exports) {
-/*
-fraction.js
-A Javascript fraction library.
-
-Copyright (c) 2009  Erik Garrison <erik@hypervolu.me>
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
-*/
-
-
-/* Fractions */
-/* 
- *
- * Fraction objects are comprised of a numerator and a denomenator.  These
- * values can be accessed at fraction.numerator and fraction.denomenator.
- *
- * Fractions are always returned and stored in lowest-form normalized format.
- * This is accomplished via Fraction.normalize.
- *
- * The following mathematical operations on fractions are supported:
- *
- * Fraction.equals
- * Fraction.add
- * Fraction.subtract
- * Fraction.multiply
- * Fraction.divide
- *
- * These operations accept both numbers and fraction objects.  (Best results
- * are guaranteed when the input is a fraction object.)  They all return a new
- * Fraction object.
- *
- * Usage:
- *
- * TODO
- *
- */
-
-/*
- * The Fraction constructor takes one of:
- *   an explicit numerator (integer) and denominator (integer),
- *   a string representation of the fraction (string),
- *   or a floating-point number (float)
- *
- * These initialization methods are provided for convenience.  Because of
- * rounding issues the best results will be given when the fraction is
- * constructed from an explicit integer numerator and denomenator, and not a
- * decimal number.
- *
- *
- * e.g. new Fraction(1, 2) --> 1/2
- *      new Fraction('1/2') --> 1/2
- *      new Fraction('2 3/4') --> 11/4  (prints as 2 3/4)
- *
- */
-Fraction = function(numerator, denominator)
-{
-    /* double argument invocation */
-    if (typeof numerator !== 'undefined' && denominator) {
-        if (typeof(numerator) === 'number' && typeof(denominator) === 'number') {
-            this.numerator = numerator;
-            this.denominator = denominator;
-        } else if (typeof(numerator) === 'string' && typeof(denominator) === 'string') {
-            // what are they?
-            // hmm....
-            // assume they are ints?
-            this.numerator = parseInt(numerator);
-            this.denominator = parseInt(denominator);
-        }
-    /* single-argument invocation */
-    } else if (typeof denominator === 'undefined') {
-        num = numerator; // swap variable names for legibility
-        if (typeof(num) === 'number') {  // just a straight number init
-            this.numerator = num;
-            this.denominator = 1;
-        } else if (typeof(num) === 'string') {
-            var a, b;  // hold the first and second part of the fraction, e.g. a = '1' and b = '2/3' in 1 2/3
-                       // or a = '2/3' and b = undefined if we are just passed a single-part number
-            var arr = num.split(' ')
-            if (arr[0]) a = arr[0]
-            if (arr[1]) b = arr[1]
-            /* compound fraction e.g. 'A B/C' */
-            //  if a is an integer ...
-            if (a % 1 === 0 && b && b.match('/')) {
-                return (new Fraction(a)).add(new Fraction(b));
-            } else if (a && !b) {
-                /* simple fraction e.g. 'A/B' */
-                if (typeof(a) === 'string' && a.match('/')) {
-                    // it's not a whole number... it's actually a fraction without a whole part written
-                    var f = a.split('/');
-                    this.numerator = f[0]; this.denominator = f[1];
-                /* string floating point */
-                } else if (typeof(a) === 'string' && a.match('\.')) {
-                    return new Fraction(parseFloat(a));
-                /* whole number e.g. 'A' */
-                } else { // just passed a whole number as a string
-                    this.numerator = parseInt(a);
-                    this.denominator = 1;
-                }
-            } else {
-                return undefined; // could not parse
-            }
-        }
-    }
-    this.normalize();
-}
-
-
-Fraction.prototype.clone = function()
-{
-    return new Fraction(this.numerator, this.denominator);
-}
-
-
-/* pretty-printer, converts fractions into whole numbers and fractions */
-Fraction.prototype.toString = function()
-{
-    if (this.denominator==='NaN') return 'NaN'
-    var wholepart = (this.numerator/this.denominator>0) ?
-      Math.floor(this.numerator / this.denominator) :
-      Math.ceil(this.numerator / this.denominator)
-    var numerator = this.numerator % this.denominator 
-    var denominator = this.denominator;
-    var result = []; 
-    if (wholepart != 0)  
-        result.push(wholepart);
-    if (numerator != 0)  
-        result.push(((wholepart===0) ? numerator : Math.abs(numerator)) + '/' + denominator);
-    return result.length > 0 ? result.join(' ') : 0;
-}
-
-
-/* destructively rescale the fraction by some integral factor */
-Fraction.prototype.rescale = function(factor)
-{
-    this.numerator *= factor;
-    this.denominator *= factor;
-    return this;
-}
-
-
-Fraction.prototype.add = function(b)
-{
-    var a = this.clone();
-    if (b instanceof Fraction) {
-        b = b.clone();
-    } else {
-        b = new Fraction(b);
-    }
-    td = a.denominator;
-    a.rescale(b.denominator);
-    b.rescale(td);
-
-    a.numerator += b.numerator;
-
-    return a.normalize();
-}
-
-
-Fraction.prototype.subtract = function(b)
-{
-    var a = this.clone();
-    if (b instanceof Fraction) {
-        b = b.clone();  // we scale our argument destructively, so clone
-    } else {
-        b = new Fraction(b);
-    }
-    td = a.denominator;
-    a.rescale(b.denominator);
-    b.rescale(td);
-
-    a.numerator -= b.numerator;
-
-    return a.normalize();
-}
-
-
-Fraction.prototype.multiply = function(b)
-{
-    var a = this.clone();
-    if (b instanceof Fraction)
-    {
-        a.numerator *= b.numerator;
-        a.denominator *= b.denominator;
-    } else if (typeof b === 'number') {
-        a.numerator *= b;
-    } else {
-        return a.multiply(new Fraction(b));
-    }
-    return a.normalize();
-}
-
-Fraction.prototype.divide = function(b)
-{
-    var a = this.clone();
-    if (b instanceof Fraction)
-    {
-        a.numerator *= b.denominator;
-        a.denominator *= b.numerator;
-    } else if (typeof b === 'number') {
-        a.denominator *= b;
-    } else {
-        return a.divide(new Fraction(b));
-    }
-    return a.normalize();
-}
-
-Fraction.prototype.equals = function(b)
-{
-    if (!(b instanceof Fraction)) {
-        b = new Fraction(b);
-    }
-    // fractions that are equal should have equal normalized forms
-    var a = this.clone().normalize();
-    var b = b.clone().normalize();
-    return (a.numerator === b.numerator && a.denominator === b.denominator);
-}
-
-
-/* Utility functions */
-
-/* Destructively normalize the fraction to its smallest representation. 
- * e.g. 4/16 -> 1/4, 14/28 -> 1/2, etc.
- * This is called after all math ops.
- */
-Fraction.prototype.normalize = (function()
-{
-
-    var isFloat = function(n)
-    {
-        return (typeof(n) === 'number' && 
-                ((n > 0 && n % 1 > 0 && n % 1 < 1) || 
-                 (n < 0 && n % -1 < 0 && n % -1 > -1))
-               );
-    }
-
-    var roundToPlaces = function(n, places) 
-    {
-        if (!places) {
-            return Math.round(n);
-        } else {
-            var scalar = Math.pow(10, places);
-            return Math.round(n*scalar)/scalar;
-        }
-    }
-        
-    return (function() {
-
-        // XXX hackish.  Is there a better way to address this issue?
-        //
-        /* first check if we have decimals, and if we do eliminate them
-         * multiply by the 10 ^ number of decimal places in the number
-         * round the number to nine decimal places
-         * to avoid js floating point funnies
-         */
-        if (isFloat(this.denominator)) {
-            var rounded = roundToPlaces(this.denominator, 9);
-            var scaleup = Math.pow(10, rounded.toString().split('.')[1].length);
-            this.denominator = Math.round(this.denominator * scaleup); // this !!! should be a whole number
-            //this.numerator *= scaleup;
-            this.numerator *= scaleup;
-        } 
-        if (isFloat(this.numerator)) {
-            var rounded = roundToPlaces(this.numerator, 9);
-            var scaleup = Math.pow(10, rounded.toString().split('.')[1].length);
-            this.numerator = Math.round(this.numerator * scaleup); // this !!! should be a whole number
-            //this.numerator *= scaleup;
-            this.denominator *= scaleup;
-        }
-        var gcf = Fraction.gcf(this.numerator, this.denominator);
-        this.numerator /= gcf;
-        this.denominator /= gcf;
-        if ((this.numerator < 0 && this.denominator < 0) || (this.numerator > 0 && this.denominator < 0)) {
-            this.numerator *= -1;
-            this.denominator *= -1;
-        }
-        return this;
-    });
-
-})();
-
-
-/* Takes two numbers and returns their greatest common factor.
- */
-Fraction.gcf = function(a, b)
-{
-
-    var common_factors = [];
-    var fa = Fraction.primeFactors(a);
-    var fb = Fraction.primeFactors(b);
-    // for each factor in fa
-    // if it's also in fb
-    // put it into the common factors
-    fa.forEach(function (factor) 
-    { 
-        var i = fb.indexOf(factor);
-        if (i >= 0) {
-            common_factors.push(factor);
-            fb.splice(i,1); // remove from fb
-        }
-    });
-
-    if (common_factors.length === 0)
-        return 1;
-
-    var gcf = (function() {
-        var r = common_factors[0];
-        var i;
-        for (i=1;i<common_factors.length;i++)
-        {
-            r = r * common_factors[i];
-        }
-        return r;
-    })();
-
-    return gcf;
-
-};
-
-
-// Adapted from: 
-// http://www.btinternet.com/~se16/js/factor.htm
-Fraction.primeFactors = function(n) 
-{
-
-    var num = Math.abs(n);
-    var factors = [];
-    var _factor = 2;  // first potential prime factor
-
-    while (_factor * _factor <= num)  // should we keep looking for factors?
-    {      
-      if (num % _factor === 0)  // this is a factor
-        { 
-            factors.push(_factor);  // so keep it
-            num = num/_factor;  // and divide our search point by it
-        }
-        else
-        {
-            _factor++;  // and increment
-        }
-    }
-
-    if (num != 1)                    // If there is anything left at the end...
-    {                                // ...this must be the last prime factor
-        factors.push(num);           //    so it too should be recorded
-    }
-
-    return factors;                  // Return the prime factors
-}
-
-module.exports.Fraction = Fraction
-
-},{}],"src/js/views/recipeView.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-var _View2 = _interopRequireDefault(require("./View.js"));
-
-var _icons = _interopRequireDefault(require("../../img/icons.svg"));
-
-var _fractional = require("fractional");
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
-
-function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
-
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-var RecipeView = /*#__PURE__*/function (_View) {
-  _inherits(RecipeView, _View);
-
-  var _super = _createSuper(RecipeView);
-
-  function RecipeView() {
-    var _this;
-
-    _classCallCheck(this, RecipeView);
-
-    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-      args[_key] = arguments[_key];
-    }
-
-    _this = _super.call.apply(_super, [this].concat(args));
-
-    _defineProperty(_assertThisInitialized(_this), "_parentElement", document.querySelector(".recipe"));
-
-    _defineProperty(_assertThisInitialized(_this), "_errorMessage", "We couldn't find that recipe. Please try another one !");
-
-    _defineProperty(_assertThisInitialized(_this), "_message", "");
-
-    return _this;
-  }
-
-  _createClass(RecipeView, [{
-    key: "_generateMarkup",
-    value: function _generateMarkup() {
-      return "\n    <figure class=\"recipe__fig\">\n      <img src=\"".concat(this._data.image, "\" alt=\"").concat(this._data.title, "\" class=\"recipe__img\" />\n      <h1 class=\"recipe__title\">\n        <span>").concat(this._data.title, "</span>\n      </h1>\n    </figure>\n  \n    <div class=\"recipe__details\">\n      <div class=\"recipe__info\">\n        <svg class=\"recipe__info-icon\">\n          <use href=\"").concat(_icons.default, "#icon-clock\"></use>\n        </svg>\n        <span class=\"recipe__info-data recipe__info-data--minutes\">").concat(this._data.cookingTime, "</span>\n        <span class=\"recipe__info-text\">minutes</span>\n      </div>\n      <div class=\"recipe__info\">\n        <svg class=\"recipe__info-icon\">\n          <use href=\"").concat(_icons.default, "#icon-users\"></use>\n        </svg>\n        <span class=\"recipe__info-data recipe__info-data--people\">").concat(this._data.servings, "</span>\n        <span class=\"recipe__info-text\">serving").concat(this._data.servings > 1 ? "s" : "", "</span>\n  \n        <div class=\"recipe__info-buttons\">\n          <button class=\"btn--tiny btn--update-servings\" data-update-to=\"").concat(this._data.servings - 1, "\" >\n            <svg>\n              <use href=\"").concat(_icons.default, "#icon-minus-circle\"></use>\n            </svg>\n          </button>\n          <button class=\"btn--tiny btn--update-servings\" data-update-to=\"").concat(this._data.servings + 1, "\">\n            <svg>\n              <use href=\"").concat(_icons.default, "#icon-plus-circle\"></use>\n            </svg>\n          </button>\n        </div>\n      </div>\n  \n      <div class=\"recipe__user-generated\">\n\n      </div>\n      <button class=\"btn--round btn--bookmark\">\n        <svg class=\"\">\n          <use href=\"").concat(_icons.default, "#icon-bookmark").concat(this._data.bookmarked ? '-fill' : '', "\"></use>\n        </svg>\n      </button>\n    </div>\n  \n    <div class=\"recipe__ingredients\">\n      <h2 class=\"heading--2\">Recipe ingredients</h2>\n      <ul class=\"recipe__ingredient-list\">\n        ").concat(this._data.ingredients.map(this._generateMarkupIngredient).join(""), "\n      </ul>\n    </div>\n  \n    <div class=\"recipe__directions\">\n      <h2 class=\"heading--2\">How to cook it</h2>\n      <p class=\"recipe__directions-text\">\n        This recipe was carefully designed and tested by\n        <span class=\"recipe__publisher\">").concat(this._data.publisher, "</span>. Please check out\n        directions at their website.\n      </p>\n      <a\n        class=\"btn--small recipe__btn\"\n        href=\"").concat(this._data.sourceUrl, "\"\n        target=\"_blank\"\n      >\n        <span>Directions</span>\n        <svg class=\"search__icon\">\n          <use href=\"").concat(_icons.default, "#icon-arrow-right\"></use>\n        </svg>\n      </a>\n    </div>");
-    }
-  }, {
-    key: "_generateMarkupIngredient",
-    value: function _generateMarkupIngredient(el) {
-      return "\n    <li class=\"recipe__ingredient\">\n      <svg class=\"recipe__icon\">\n        <use href=\"".concat(_icons.default, "#icon-check\"></use>\n      </svg>\n      <div class=\"recipe__quantity\">").concat(el.quantity ? new Fraction(el.quantity).toString() : "", "</div>\n      <div class=\"recipe__description\">\n        <span class=\"recipe__unit\">").concat(el.unit, "</span>\n        ").concat(el.description, "\n      </div>\n    </li>");
-    }
-  }, {
-    key: "addHandlerRender",
-    value: function addHandlerRender(handler) {
-      ["hashchange", "load"].forEach(function (el) {
-        return window.addEventListener(el, handler);
-      });
-    }
-  }, {
-    key: "addHandlerUpdateServings",
-    value: function addHandlerUpdateServings(handler) {
-      this._parentElement.addEventListener("click", function (e) {
-        var btn = e.target.closest(".btn--update-servings");
-        if (!btn) return;
-        console.log(+btn.dataset.updateTo);
-        var updateTo = +btn.dataset.updateTo;
-        if (updateTo <= 0) return;
-        handler(updateTo);
-      });
-    }
-  }, {
-    key: "addHandlerAddBookmark",
-    value: function addHandlerAddBookmark(handler) {
-      this._parentElement.addEventListener("click", function (e) {
-        var btn = e.target.closest(".btn--bookmark");
-        console.log(btn);
-        if (!btn) return;
-        handler();
-      });
-    }
-  }]);
-
-  return RecipeView;
-}(_View2.default);
-
-var _default = new RecipeView();
-
-exports.default = _default;
-},{"./View.js":"src/js/views/View.js","../../img/icons.svg":"src/img/icons.svg","fractional":"node_modules/fractional/index.js"}],"src/js/views/searchView.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-var SearchView = /*#__PURE__*/function () {
-  function SearchView() {
-    _classCallCheck(this, SearchView);
-
-    _defineProperty(this, "_parentElement", document.querySelector(".search"));
-  }
-
-  _createClass(SearchView, [{
-    key: "getQuery",
-    value: function getQuery() {
-      var query = this._parentElement.querySelector(".search__field").value;
-
-      this._clearInput();
-
-      return query;
-    }
-  }, {
-    key: "_clearInput",
-    value: function _clearInput() {
-      this._parentElement.querySelector(".search__field").value = "";
-    }
-  }, {
-    key: "addHandlerSearch",
-    value: function addHandlerSearch(handler) {
-      this._parentElement.addEventListener("submit", function (e) {
-        e.preventDefault();
-        handler();
-      });
-    }
-  }]);
-
-  return SearchView;
-}();
-
-var _default = new SearchView();
-
-exports.default = _default;
-},{}],"src/js/views/previewView.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-var _icons = _interopRequireDefault(require("../../img/icons.svg"));
-
-var _View2 = _interopRequireDefault(require("./View.js"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
-
-function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
-
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-var PreviewView = /*#__PURE__*/function (_View) {
-  _inherits(PreviewView, _View);
-
-  var _super = _createSuper(PreviewView);
-
-  function PreviewView() {
-    var _this;
-
-    _classCallCheck(this, PreviewView);
-
-    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-      args[_key] = arguments[_key];
-    }
-
-    _this = _super.call.apply(_super, [this].concat(args));
-
-    _defineProperty(_assertThisInitialized(_this), "_parentElement", "");
-
-    return _this;
-  }
-
-  _createClass(PreviewView, [{
-    key: "_generateMarkup",
-    value: function _generateMarkup() {
-      var id = window.location.hash.slice(1);
-      return "\n    <li class=\"preview\">\n      <a class=\"preview__link ".concat(this._data.id === id ? 'preview__link--active' : '', "\" href=\"#").concat(this._data.id, "\">\n        <figure class=\"preview__fig\">\n          <img src=\"").concat(this._data.image, "\" alt=\"").concat(this._data.title, "\" />\n        </figure>\n        <div class=\"preview__data\">\n          <h4 class=\"preview__title\">").concat(this._data.title, "</h4>\n          <p class=\"preview__publisher\">").concat(this._data.publisher, "</p>\n          <div class=\"preview__user-generated\">\n            <svg>\n              <use href=\"").concat(_icons.default, "#icon-user\"></use>\n            </svg>\n          </div>\n        </div>\n      </a>\n    </li>\n    ");
-    }
-  }]);
-
-  return PreviewView;
-}(_View2.default);
-
-var _default = new PreviewView();
-
-exports.default = _default;
-},{"../../img/icons.svg":"src/img/icons.svg","./View.js":"src/js/views/View.js"}],"src/js/views/resultsView.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-var _icons = _interopRequireDefault(require("../../img/icons.svg"));
-
-var _View2 = _interopRequireDefault(require("./View.js"));
-
-var _previewView = _interopRequireDefault(require("./previewView.js"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
-
-function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
-
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-var ResultsView = /*#__PURE__*/function (_View) {
-  _inherits(ResultsView, _View);
-
-  var _super = _createSuper(ResultsView);
-
-  function ResultsView() {
-    var _this;
-
-    _classCallCheck(this, ResultsView);
-
-    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-      args[_key] = arguments[_key];
-    }
-
-    _this = _super.call.apply(_super, [this].concat(args));
-
-    _defineProperty(_assertThisInitialized(_this), "_parentElement", document.querySelector(".results"));
-
-    _defineProperty(_assertThisInitialized(_this), "_errorMessage", "No recipes found for your query ! Please try again 😉");
-
-    _defineProperty(_assertThisInitialized(_this), "_message", "");
-
-    return _this;
-  }
-
-  _createClass(ResultsView, [{
-    key: "_generateMarkup",
-    value: function _generateMarkup() {
-      return this._data.map(function (result) {
-        return _previewView.default.render(result, false);
-      }).join("");
-    }
-  }]);
-
-  return ResultsView;
-}(_View2.default);
-
-var _default = new ResultsView();
-
-exports.default = _default;
-},{"../../img/icons.svg":"src/img/icons.svg","./View.js":"src/js/views/View.js","./previewView.js":"src/js/views/previewView.js"}],"src/js/views/bookmarksView.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-var _icons = _interopRequireDefault(require("../../img/icons.svg"));
-
-var _View2 = _interopRequireDefault(require("./View.js"));
-
-var _previewView = _interopRequireDefault(require("./previewView.js"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
-
-function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
-
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-var BookMark = /*#__PURE__*/function (_View) {
-  _inherits(BookMark, _View);
-
-  var _super = _createSuper(BookMark);
-
-  function BookMark() {
-    var _this;
-
-    _classCallCheck(this, BookMark);
-
-    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-      args[_key] = arguments[_key];
-    }
-
-    _this = _super.call.apply(_super, [this].concat(args));
-
-    _defineProperty(_assertThisInitialized(_this), "_parentElement", document.querySelector(".bookmarks__list"));
-
-    _defineProperty(_assertThisInitialized(_this), "_errorMessage", "No bookmarks yet. Find a nice recipe and bookmark it 😉");
-
-    _defineProperty(_assertThisInitialized(_this), "_message", "");
-
-    return _this;
-  }
-
-  _createClass(BookMark, [{
-    key: "addHandlerRender",
-    value: function addHandlerRender(handler) {
-      window.addEventListener("load", handler);
-    }
-  }, {
-    key: "_generateMarkup",
-    value: function _generateMarkup() {
-      return this._data.map(function (bookmark) {
-        return _previewView.default.render(bookmark, false);
-      }).join("");
-    }
-  }]);
-
-  return BookMark;
-}(_View2.default);
-
-var _default = new BookMark();
-
-exports.default = _default;
-},{"../../img/icons.svg":"src/img/icons.svg","./View.js":"src/js/views/View.js","./previewView.js":"src/js/views/previewView.js"}],"src/js/views/paginationView.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-var _View2 = _interopRequireDefault(require("./View.js"));
-
-var _icons = _interopRequireDefault(require("../../img/icons.svg"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
-
-function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
-
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-// import { async } from 'regenerator-runtime/runtime';
-var PaginationView = /*#__PURE__*/function (_View) {
-  _inherits(PaginationView, _View);
-
-  var _super = _createSuper(PaginationView);
-
-  function PaginationView() {
-    var _this;
-
-    _classCallCheck(this, PaginationView);
-
-    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-      args[_key] = arguments[_key];
-    }
-
-    _this = _super.call.apply(_super, [this].concat(args));
-
-    _defineProperty(_assertThisInitialized(_this), "_parentElement", document.querySelector(".pagination"));
-
-    return _this;
-  }
-
-  _createClass(PaginationView, [{
-    key: "addHandlerClick",
-    value: function addHandlerClick(handler) {
-      this._parentElement.addEventListener("click", function (e) {
-        var btn = e.target.closest(".btn--inline");
-        if (!btn) return; // console.log(btn);
-
-        var goToPage = +btn.dataset.goto; // console.log(goToPage);
-
-        handler(goToPage);
-      });
-    }
-  }, {
-    key: "_generateMarkup",
-    value: function _generateMarkup() {
-      var curPage = this._data.page;
-      var numPages = Math.ceil(this._data.results.length / this._data.resultsPerPage); // console.log("nbr pages :" + numPages);
-      // Page 1 and there are other pages
-
-      if (curPage === 1 && numPages > 1) {
-        return "\n      <button data-goto=\"".concat(curPage + 1, "\" class=\"btn--inline pagination__btn--next\">\n        <span>Page ").concat(curPage + 1, "</span>\n        <svg class=\"search__icon\">\n          <use href=\"").concat(_icons.default, "#icon-arrow-right\"></use>\n        </svg>\n      </button>\n      ");
-      } // Last Page
-
-
-      if (curPage === numPages && numPages > 1) {
-        return "\n      <button data-goto=\"".concat(curPage - 1, "\" class=\"btn--inline pagination__btn--prev\">\n        <svg class=\"search__icon\">\n          <use href=\"").concat(_icons.default, "#icon-arrow-left\"></use>\n        </svg>\n        <span>Page ").concat(curPage - 1, "</span>\n      </button>\n      ");
-      } // Other page
-
-
-      if (curPage < numPages) {
-        return "\n      <button data-goto=\"".concat(curPage - 1, "\" class=\"btn--inline pagination__btn--prev\">\n        <svg class=\"search__icon\">\n          <use href=\"").concat(_icons.default, "#icon-arrow-left\"></use>\n        </svg>\n        <span>Page ").concat(curPage - 1, "</span>\n      </button>\n      <button data-goto=\"").concat(curPage + 1, "\" class=\"btn--inline pagination__btn--next\">\n        <span>Page ").concat(curPage + 1, "</span>\n        <svg class=\"search__icon\">\n          <use href=\"").concat(_icons.default, "#icon-arrow-right\"></use>\n        </svg>\n      </button>\n      ");
-      } //Page 1 and there are NO other pages
-
-
-      return "";
-    }
-  }]);
-
-  return PaginationView;
-}(_View2.default);
-
-var _default = new PaginationView();
-
-exports.default = _default;
-},{"./View.js":"src/js/views/View.js","../../img/icons.svg":"src/img/icons.svg"}],"src/js/views/addRecipeView.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-var _View2 = _interopRequireDefault(require("./View.js"));
-
-var _icons = _interopRequireDefault(require("../../img/icons.svg"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
-
-function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-
-function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
-
-function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter); }
-
-function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
-
-function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
-
-function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
-
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-var AddRecipeView = /*#__PURE__*/function (_View) {
-  _inherits(AddRecipeView, _View);
-
-  var _super = _createSuper(AddRecipeView);
-
-  function AddRecipeView() {
-    var _this;
-
-    _classCallCheck(this, AddRecipeView);
-
-    _this = _super.call(this);
-
-    _defineProperty(_assertThisInitialized(_this), "_parentElement", document.querySelector(".upload"));
-
-    _defineProperty(_assertThisInitialized(_this), "_window", document.querySelector(".add-recipe-window"));
-
-    _defineProperty(_assertThisInitialized(_this), "_overlay", document.querySelector(".overlay"));
-
-    _defineProperty(_assertThisInitialized(_this), "_btnOpen", document.querySelector(".nav__btn--add-recipe"));
-
-    _defineProperty(_assertThisInitialized(_this), "_btnClose", document.querySelector(".btn--close-modal"));
-
-    _this._addHandlerShowWindow();
-
-    _this._addHandlerHideWindow();
-
-    return _this;
-  }
-
-  _createClass(AddRecipeView, [{
-    key: "toggleWindow",
-    value: function toggleWindow() {
-      this._overlay.classList.toggle("hidden");
-
-      this._window.classList.toggle("hidden");
-    }
-  }, {
-    key: "_addHandlerShowWindow",
-    value: function _addHandlerShowWindow() {
-      this._btnOpen.addEventListener("click", this.toggleWindow.bind(this));
-    }
-  }, {
-    key: "_addHandlerHideWindow",
-    value: function _addHandlerHideWindow() {
-      this._btnClose.addEventListener("click", this.toggleWindow.bind(this));
-
-      this._overlay.addEventListener("click", this.toggleWindow.bind(this));
-    }
-  }, {
-    key: "addHandlerUpload",
-    value: function addHandlerUpload(handler) {
-      this._parentElement.addEventListener("submit", function (e) {
-        e.preventDefault();
-
-        var dataArr = _toConsumableArray(new FormData(this));
-
-        var data = Object.fromEntries(dataArr);
-        handler(data);
-      });
-    }
-  }, {
-    key: "_generateMarkup",
-    value: function _generateMarkup() {}
-  }]);
-
-  return AddRecipeView;
-}(_View2.default);
-
-var _default = new AddRecipeView();
-
-exports.default = _default;
-},{"./View.js":"src/js/views/View.js","../../img/icons.svg":"src/img/icons.svg"}],"src/js/controller.js":[function(require,module,exports) {
-"use strict";
-
-var _runtime = require("regenerator-runtime/runtime");
-
-require("core-js/stable");
 
 var model = _interopRequireWildcard(require("./model.js"));
+
+var _config = require("./config.js");
 
 var _recipeView = _interopRequireDefault(require("./views/recipeView.js"));
 
@@ -14375,11 +14385,17 @@ var _searchView = _interopRequireDefault(require("./views/searchView.js"));
 
 var _resultsView = _interopRequireDefault(require("./views/resultsView.js"));
 
-var _bookmarksView = _interopRequireDefault(require("./views/bookmarksView.js"));
-
 var _paginationView = _interopRequireDefault(require("./views/paginationView.js"));
 
+var _bookmarksView = _interopRequireDefault(require("./views/bookmarksView.js"));
+
 var _addRecipeView = _interopRequireDefault(require("./views/addRecipeView.js"));
+
+require("core-js/stable");
+
+require("regenerator-runtime/runtime");
+
+var _regeneratorRuntime = require("regenerator-runtime");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -14390,10 +14406,6 @@ function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && 
 function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
 
 function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
-
-if (module.hot) {
-  module.hot.accept();
-}
 
 var controlRecipes = /*#__PURE__*/function () {
   var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
@@ -14413,23 +14425,23 @@ var controlRecipes = /*#__PURE__*/function () {
             return _context.abrupt("return");
 
           case 4:
-            _recipeView.default.renderSpinner(); // maj el selectionné
+            _recipeView.default.renderSpinner(); // 0) Update results view to mark selected search result
 
 
-            _resultsView.default.update(model.getSearchResultsPage()); //charge la recette
+            _resultsView.default.update(model.getSearchResultsPage()); // 1) Updating bookmarks view
 
 
-            _context.next = 8;
+            _bookmarksView.default.update(model.state.bookmarks); // 2) Loading recipe
+
+
+            _context.next = 9;
             return model.loadRecipe(id);
 
-          case 8:
-            //affiche recette
-            _recipeView.default.render(model.state.recipe); // update bookmark
+          case 9:
+            // 3) Rendering recipe
+            _recipeView.default.render(model.state.recipe);
 
-
-            _bookmarksView.default.update(model.state.bookmarks);
-
-            _context.next = 15;
+            _context.next = 16;
             break;
 
           case 12:
@@ -14438,7 +14450,9 @@ var controlRecipes = /*#__PURE__*/function () {
 
             _recipeView.default.renderError();
 
-          case 15:
+            console.error(_context.t0);
+
+          case 16:
           case "end":
             return _context.stop();
         }
@@ -14459,26 +14473,26 @@ var controlSearchResults = /*#__PURE__*/function () {
         switch (_context2.prev = _context2.next) {
           case 0:
             _context2.prev = 0;
-            //1.Get search query
+
+            _resultsView.default.renderSpinner(); // 1) Get search query
+
+
             query = _searchView.default.getQuery();
 
             if (query) {
-              _context2.next = 4;
+              _context2.next = 5;
               break;
             }
 
             return _context2.abrupt("return");
 
-          case 4:
-            //2.Load search results
-            _resultsView.default.renderSpinner();
-
+          case 5:
             _context2.next = 7;
             return model.loadSearchResults(query);
 
           case 7:
-            //3.Render Results
-            _resultsView.default.render(model.getSearchResultsPage()); // 4.Render pagination buttons
+            // 3) Render results
+            _resultsView.default.render(model.getSearchResultsPage()); // 4) Render initial pagination buttons
 
 
             _paginationView.default.render(model.state.search);
@@ -14505,22 +14519,25 @@ var controlSearchResults = /*#__PURE__*/function () {
 }();
 
 var controlPagination = function controlPagination(goToPage) {
-  _resultsView.default.render(model.getSearchResultsPage(goToPage));
+  // 1) Render NEW results
+  _resultsView.default.render(model.getSearchResultsPage(goToPage)); // 2) Render NEW pagination buttons
+
 
   _paginationView.default.render(model.state.search);
 };
 
 var controlServings = function controlServings(newServings) {
-  model.updateServings(newServings); // recipeView.render(model.state.recipe);
+  // Update the recipe servings (in state)
+  model.updateServings(newServings); // Update the recipe view
 
   _recipeView.default.update(model.state.recipe);
 };
 
 var controlAddBookmark = function controlAddBookmark() {
-  // 1. Add/remove bookmark
-  if (!model.state.recipe.bookmarked) model.addBookmark(model.state.recipe);else model.deleteBookmark(model.state.recipe.id); // 2. Update recipe view
+  // 1) Add/remove bookmark
+  if (!model.state.recipe.bookmarked) model.addBookmark(model.state.recipe);else model.deleteBookmark(model.state.recipe.id); // 2) Update recipe view
 
-  _recipeView.default.update(model.state.recipe); // Render bookmarks
+  _recipeView.default.update(model.state.recipe); // 3) Render bookmarks
 
 
   _bookmarksView.default.render(model.state.bookmarks);
@@ -14537,26 +14554,47 @@ var controlAddRecipe = /*#__PURE__*/function () {
         switch (_context3.prev = _context3.next) {
           case 0:
             _context3.prev = 0;
-            _context3.next = 3;
+
+            // Show loading spinner
+            _addRecipeView.default.renderSpinner(); // Upload the new recipe data
+
+
+            _context3.next = 4;
             return model.uploadRecipe(newRecipe);
 
-          case 3:
-            _context3.next = 9;
+          case 4:
+            console.log(model.state.recipe); // Render recipe
+
+            _recipeView.default.render(model.state.recipe); // Success message
+
+
+            _addRecipeView.default.renderMessage(); // Render bookmark view
+
+
+            _bookmarksView.default.render(model.state.bookmarks); // Change ID in URL
+
+
+            window.history.pushState(null, '', "#".concat(model.state.recipe.id)); // Close form window
+
+            setTimeout(function () {
+              _addRecipeView.default.toggleWindow();
+            }, _config.MODAL_CLOSE_SEC * 1000);
+            _context3.next = 16;
             break;
 
-          case 5:
-            _context3.prev = 5;
+          case 12:
+            _context3.prev = 12;
             _context3.t0 = _context3["catch"](0);
-            console.log("🧨", _context3.t0);
+            console.error('💥', _context3.t0);
 
             _addRecipeView.default.renderError(_context3.t0.message);
 
-          case 9:
+          case 16:
           case "end":
             return _context3.stop();
         }
       }
-    }, _callee3, null, [[0, 5]]);
+    }, _callee3, null, [[0, 12]]);
   }));
 
   return function controlAddRecipe(_x) {
@@ -14580,8 +14618,8 @@ var init = function init() {
   _addRecipeView.default.addHandlerUpload(controlAddRecipe);
 };
 
-init(); //Explication suite du projet (BookMark, localStorage etc)
-},{"regenerator-runtime/runtime":"node_modules/regenerator-runtime/runtime.js","core-js/stable":"node_modules/core-js/stable/index.js","./model.js":"src/js/model.js","./views/recipeView.js":"src/js/views/recipeView.js","./views/searchView.js":"src/js/views/searchView.js","./views/resultsView.js":"src/js/views/resultsView.js","./views/bookmarksView.js":"src/js/views/bookmarksView.js","./views/paginationView.js":"src/js/views/paginationView.js","./views/addRecipeView.js":"src/js/views/addRecipeView.js"}],"../../../../../Users/Asus/AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+init();
+},{"./model.js":"src/js/model.js","./config.js":"src/js/config.js","./views/recipeView.js":"src/js/views/recipeView.js","./views/searchView.js":"src/js/views/searchView.js","./views/resultsView.js":"src/js/views/resultsView.js","./views/paginationView.js":"src/js/views/paginationView.js","./views/bookmarksView.js":"src/js/views/bookmarksView.js","./views/addRecipeView.js":"src/js/views/addRecipeView.js","core-js/stable":"node_modules/core-js/stable/index.js","regenerator-runtime/runtime":"node_modules/regenerator-runtime/runtime.js","regenerator-runtime":"node_modules/regenerator-runtime/runtime.js"}],"../../../../../Users/Asus/AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -14609,7 +14647,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "54300" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "61896" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
